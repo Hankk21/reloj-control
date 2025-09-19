@@ -1,6 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:minHeight="56dp"
+    android:gravity="center_vertical">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Nombre (con avatar pequeño) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/iv_avatar_small"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_person_placeholder"
+            android:layout_marginEnd="8dp"
+            app:civ_border_width="1dp"
+            app:civ_border_color="@color/text_hint" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_nombre_usuario"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Juan Carlos Pérez"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tv_email_usuario"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="juan.perez@empresa.com"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- RUT -->
+    <TextView
+        android:id="@+id/tv_rut_usuario"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.5"
+        android:text="12.345.678-9"
+        android:textSize="12sp"
+        android:textColor="@color/text_primary"
+        android:gravity="center" />
+
+    <!-- Rol -->
+    <TextView
+        android:id="@+id/tv_rol_usuario"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Empleado"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:background="@drawable/badge_rol_empleado"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:gravity="center" />
+
+    <!-- Estado -->
+    <TextView
+        android:id="@+id/tv_estado_usuario"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Activo"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:background="@drawable/badge_estado_activo"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:gravity="center"
+        android:layout_marginHorizontal="4dp" />
+
+    <!-- Acciones -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/iv_ver_usuario"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_visibility"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:layout_marginEnd="4dp"
+            app:tint="@color/primary_color"
+            android:contentDescription="Ver usuario" />
+
+        <ImageView
+            android:id="@+id/iv_editar_usuario"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_edit"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:layout_marginHorizontal="2dp"
+            app:tint="@color/warning_color"
+            android:contentDescription="Editar usuario" />
+
+        <ImageView
+            android:id="@+id/iv_eliminar_usuario"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_delete"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:layout_marginStart="4dp"
+            app:tint="@color/error_color"
+            android:contentDescription="Eliminar usuario" />
+
+    </LinearLayout>
+
+</LinearLayout>
