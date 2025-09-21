@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Colores principales -->
+    <color name="primary_color">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="primary_light">#BBDEFB</color>
+
+    <!-- Colores de estado -->
+    <color name="success_color">#4CAF50</color>
+    <color name="success_light">#C8E6C9</color>
+    <color name="success_text">#2E7D32</color>
+
+    <color name="warning_color">#FF9800</color>
+    <color name="warning_light">#FFE0B2</color>
+    <color name="warning_text">#F57C00</color>
+
+    <color name="error_color">#F44336</color>
+    <color name="error_light">#FFCDD2</color>
+    <color name="error_text">#C62828</color>
+
+    <!-- Colores de texto -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+
+    <!-- Colores de fondo -->
+    <color name="background_color">#FAFAFA</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Colores de estado de trámites -->
+    <color name="pendiente_color">#FFC107</color>
+    <color name="aceptado_color">#4CAF50</color>
+    <color name="rechazado_color">#F44336</color>
 </resources>
