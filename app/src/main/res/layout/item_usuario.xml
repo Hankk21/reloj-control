@@ -9,20 +9,20 @@
     android:minHeight="56dp"
     android:gravity="center_vertical">
 
-    <!-- Nombre (con avatar pequeño) -->
+    <!-- Información principal del usuario -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="2"
+        android:layout_weight="3"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/iv_avatar_small"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:id="@+id/iv_avatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_person_placeholder"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="12dp"
             app:civ_border_width="1dp"
             app:civ_border_color="@color/text_hint" />
 
@@ -44,11 +44,11 @@
                 android:ellipsize="end" />
 
             <TextView
-                android:id="@+id/tv_email_usuario"
+                android:id="@+id/tv_email"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="juan.perez@empresa.com"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="@color/text_secondary"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -57,20 +57,9 @@
 
     </LinearLayout>
 
-    <!-- RUT -->
-    <TextView
-        android:id="@+id/tv_rut_usuario"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1.5"
-        android:text="12.345.678-9"
-        android:textSize="12sp"
-        android:textColor="@color/text_primary"
-        android:gravity="center" />
-
     <!-- Rol -->
     <TextView
-        android:id="@+id/tv_rol_usuario"
+        android:id="@+id/tv_rol"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
@@ -79,9 +68,10 @@
         android:textStyle="bold"
         android:textColor="@color/white"
         android:background="@drawable/badge_rol_empleado"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="2dp"
-        android:gravity="center" />
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="4dp"
+        android:gravity="center"
+        android:layout_marginHorizontal="4dp" />
 
     <!-- Estado -->
     <TextView
@@ -94,58 +84,17 @@
         android:textStyle="bold"
         android:textColor="@color/white"
         android:background="@drawable/badge_estado_activo"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="2dp"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="4dp"
         android:gravity="center"
         android:layout_marginHorizontal="4dp" />
 
-    <!-- Acciones -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <ImageView
-            android:id="@+id/iv_ver_usuario"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@drawable/ic_visibility"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:layout_marginEnd="4dp"
-            app:tint="@color/primary_color"
-            android:contentDescription="Ver usuario" />
-
-        <ImageView
-            android:id="@+id/iv_editar_usuario"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@drawable/ic_edit"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:layout_marginHorizontal="2dp"
-            app:tint="@color/warning_color"
-            android:contentDescription="Editar usuario" />
-
-        <ImageView
-            android:id="@+id/iv_eliminar_usuario"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@drawable/ic_delete"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:layout_marginStart="4dp"
-            app:tint="@color/error_color"
-            android:contentDescription="Eliminar usuario" />
-
-    </LinearLayout>
+    <!-- Indicador de acción (flecha) -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_arrow_forward"
+        android:layout_marginStart="8dp"
+        app:tint="@color/text_secondary" />
 
 </LinearLayout>
