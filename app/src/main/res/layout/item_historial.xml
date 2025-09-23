@@ -14,7 +14,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header con fecha y estado -->
+        <!-- Header con fecha, tipo y estado -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -30,6 +30,15 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/tv_tipo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Justificación"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginEnd="8dp" />
 
             <TextView
                 android:id="@+id/tv_estado"
@@ -56,9 +65,9 @@
             android:textColor="@color/text_primary"
             android:layout_marginBottom="4dp" />
 
-        <!-- Descripción (solo para justificaciones) -->
+        <!-- Detalle específico (para justificaciones/licencias) -->
         <TextView
-            android:id="@+id/tv_descripcion"
+            android:id="@+id/tv_detalle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Consulta médica de rutina programada"
@@ -74,12 +83,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:layout_marginBottom="8dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Desde: "
+                android:text="Período: "
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
 
@@ -95,7 +105,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" hasta: "
+                android:text=" - "
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
 
@@ -110,29 +120,31 @@
 
         </LinearLayout>
 
-        <!-- Archivos adjuntos -->
+        <!-- Botón de descargar archivo -->
         <LinearLayout
-            android:id="@+id/layout_archivos"
+            android:id="@+id/layout_descargar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp">
 
             <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_attach_file"
-                android:layout_marginEnd="4dp"
-                app:tint="@color/text_secondary" />
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_download"
+                android:layout_marginEnd="8dp"
+                app:tint="@color/primary_color" />
 
             <TextView
-                android:id="@+id/tv_archivos_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2 archivos adjuntos"
+                android:text="Descargar archivo adjunto"
                 android:textSize="12sp"
-                android:textColor="@color/text_secondary" />
+                android:textColor="@color/primary_color" />
 
         </LinearLayout>
 
