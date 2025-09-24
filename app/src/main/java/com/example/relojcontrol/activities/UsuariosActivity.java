@@ -410,7 +410,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
         if (itemId == R.id.action_refresh) {
             cargarUsuarios();
             return true;
-        } else if (itemId == R.id.action_clear_filters) { // ✅ AHORA EXISTE
+        } else if (itemId == R.id.action_clear_filters) { // AHORA EXISTE
             limpiarFiltros();
             return true;
         }
