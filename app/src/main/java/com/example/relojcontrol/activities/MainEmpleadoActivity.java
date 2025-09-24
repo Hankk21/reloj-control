@@ -7,46 +7,46 @@ import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.button.MaterialButton;
-
 import com.example.relojcontrol.R;
-import com.example.relojcontrol.models.RegistroAsistencia;
 import com.example.relojcontrol.network.ApiClient;
 import com.example.relojcontrol.network.ApiEndpoints;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.Map;
 
 public class MainEmpleadoActivity extends AppCompatActivity {
 
-    // Constants
-    private static final String PREFS_NAME = "LoginPrefs";
-    private static final String KEY_USER_ID = "user_id";
-
-    // Views
     private Toolbar toolbar;
-    private TextView tvCurrentTime, tvCurrentDate, tvConfirmationMessage;
+    private TextView tvWelcome, tvCurrentTime, tvCurrentDate, tvConfirmationMessage;
     private TextView tvEntradaTime, tvSalidaTime, tvEntradaStatus, tvSalidaStatus;
     private MaterialButton btnEntrada, btnSalida;
+    private ProgressBar progressBar;
 
-    // Variables
     private Handler timeHandler;
     private Runnable timeRunnable;
     private SimpleDateFormat timeFormat, dateFormat;
     private SharedPreferences sharedPreferences;
     private int userId;
+
     private boolean hasEntrada = false;
     private boolean hasSalida = false;
 
@@ -67,7 +67,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         startTimeUpdater();
-        loadTodayAttendance(); // Recargar datos por si hubo cambios
+        loadTodayAttendance();
     }
 
     @Override
@@ -76,33 +76,29 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         stopTimeUpdater();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopTimeUpdater();
-    }
-
     private void initViews() {
+        sharedPreferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
         toolbar = findViewById(R.id.toolbar);
+        progressBar = findViewById(R.id.progressBar);
 
-        // Time and date views
+        tvWelcome = findViewById(R.id.tv_welcome);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvCurrentDate = findViewById(R.id.tv_current_date);
         tvConfirmationMessage = findViewById(R.id.tv_confirmation_message);
 
-        // History views
         tvEntradaTime = findViewById(R.id.tv_entrada_time);
         tvSalidaTime = findViewById(R.id.tv_salida_time);
         tvEntradaStatus = findViewById(R.id.tv_entrada_status);
         tvSalidaStatus = findViewById(R.id.tv_salida_status);
 
-        // Buttons
         btnEntrada = findViewById(R.id.btn_entrada);
         btnSalida = findViewById(R.id.btn_salida);
 
-        // SharedPreferences
-        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        userId = sharedPreferences.getInt(KEY_USER_ID, -1);
+        userId = sharedPreferences.getInt("user_id", -1);
+
+        // Configurar bienvenida
+        String userName = sharedPreferences.getString("user_name", "Empleado");
+        tvWelcome.setText("Bienvenido, " + userName);
     }
 
     private void setupToolbar() {
@@ -113,7 +109,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     }
 
     private void setupDateTimeFormats() {
-        timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+        timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         dateFormat = new SimpleDateFormat("EEEE, dd 'de' MMMM yyyy", new Locale("es", "ES"));
     }
 
@@ -128,21 +124,17 @@ public class MainEmpleadoActivity extends AppCompatActivity {
             @Override
             public void run() {
                 updateDateTime();
-                timeHandler.postDelayed(this, 1000); // Actualizar cada segundo
+                timeHandler.postDelayed(this, 1000);
             }
         };
     }
 
     private void startTimeUpdater() {
-        if (timeHandler != null && timeRunnable != null) {
-            timeHandler.post(timeRunnable);
-        }
+        timeHandler.post(timeRunnable);
     }
 
     private void stopTimeUpdater() {
-        if (timeHandler != null && timeRunnable != null) {
-            timeHandler.removeCallbacks(timeRunnable);
-        }
+        timeHandler.removeCallbacks(timeRunnable);
     }
 
     private void updateDateTime() {
@@ -151,235 +143,226 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         tvCurrentDate.setText(dateFormat.format(currentTime));
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_justificaciones) {
-            Intent intent = new Intent(this, JustificadoresActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (id == R.id.action_profile) {
-            // TODO: Abrir perfil de usuario
-            Toast.makeText(this, "Perfil de usuario", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (id == R.id.action_logout) {
-            logout();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
     private void registrarEntrada() {
         if (hasEntrada) {
-            Toast.makeText(this, "Ya has registrado tu entrada hoy", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Ya registraste tu entrada hoy", Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnEntrada.setEnabled(false);
-        btnEntrada.setText("Registrando...");
+        progressBar.setVisibility(View.VISIBLE);
 
-        Date currentTime = new Date();
-        RegistroAsistencia registro = new RegistroAsistencia();
-        registro.setUsuarioId(userId);
-        registro.setTipoRegistro("ENTRADA");
-        registro.setFechaHora(currentTime);
+        Map<String, Object> params = new HashMap<>();
+        params.put("id_usuario", userId);
+        params.put("id_tipo_accion", 1); // 1 = entrada
+        params.put("observaciones", "Registro desde app móvil");
 
-        ApiEndpoints apiService = ApiClient.getClient().create(ApiEndpoints.class);
-        Call<RegistroAsistencia> call = apiService.registrarAsistencia(registro);
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                ApiEndpoints.ASISTENCIA_REGISTRAR,
+                new JSONObject(params),
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        progressBar.setVisibility(View.GONE);
+                        btnEntrada.setEnabled(true);
 
-        call.enqueue(new Callback<RegistroAsistencia>() {
-            @Override
-            public void onResponse(Call<RegistroAsistencia> call, Response<RegistroAsistencia> response) {
-                btnEntrada.setEnabled(true);
-                btnEntrada.setText("Registrar\nEntrada");
-
-                if (response.isSuccessful() && response.body() != null) {
-                    hasEntrada = true;
-                    updateEntradaUI(currentTime);
-                    showConfirmationMessage("Entrada registrada correctamente a las " +
-                            timeFormat.format(currentTime));
-                    updateButtonStates();
-                } else {
-                    Toast.makeText(MainEmpleadoActivity.this,
-                            "Error al registrar entrada", Toast.LENGTH_SHORT).show();
+                        try {
+                            if (response.getBoolean("success")) {
+                                hasEntrada = true;
+                                String horaEntrada = response.getJSONObject("data").getString("hora");
+                                updateEntradaUI(horaEntrada);
+                                showConfirmationMessage("Entrada registrada: " + horaEntrada);
+                                updateButtonStates();
+                            } else {
+                                Toast.makeText(MainEmpleadoActivity.this,
+                                        response.getString("message"), Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (JSONException e) {
+                            Toast.makeText(MainEmpleadoActivity.this,
+                                    "Error al procesar respuesta", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        progressBar.setVisibility(View.GONE);
+                        btnEntrada.setEnabled(true);
+                        Toast.makeText(MainEmpleadoActivity.this,
+                                "Error de conexión", Toast.LENGTH_SHORT).show();
+                    }
                 }
-            }
+        );
 
-            @Override
-            public void onFailure(Call<RegistroAsistencia> call, Throwable t) {
-                btnEntrada.setEnabled(true);
-                btnEntrada.setText("Registrar\nEntrada");
-                Toast.makeText(MainEmpleadoActivity.this,
-                        "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        ApiClient.getInstance(this).addToRequestQueue(request);
     }
 
     private void registrarSalida() {
         if (!hasEntrada) {
-            Toast.makeText(this, "Debes registrar primero tu entrada", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Primero debes registrar entrada", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (hasSalida) {
-            Toast.makeText(this, "Ya has registrado tu salida hoy", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Ya registraste tu salida hoy", Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnSalida.setEnabled(false);
-        btnSalida.setText("Registrando...");
+        progressBar.setVisibility(View.VISIBLE);
 
-        Date currentTime = new Date();
-        RegistroAsistencia registro = new RegistroAsistencia();
-        registro.setUsuarioId(userId);
-        registro.setTipoRegistro("SALIDA");
-        registro.setFechaHora(currentTime);
+        Map<String, Object> params = new HashMap<>();
+        params.put("id_usuario", userId);
+        params.put("id_tipo_accion", 2); // 2 = salida
+        params.put("observaciones", "Registro desde app móvil");
 
-        ApiEndpoints apiService = ApiClient.getClient().create(ApiEndpoints.class);
-        Call<RegistroAsistencia> call = apiService.registrarAsistencia(registro);
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                ApiEndpoints.ASISTENCIA_REGISTRAR,
+                new JSONObject(params),
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        progressBar.setVisibility(View.GONE);
+                        btnSalida.setEnabled(true);
 
-        call.enqueue(new Callback<RegistroAsistencia>() {
-            @Override
-            public void onResponse(Call<RegistroAsistencia> call, Response<RegistroAsistencia> response) {
-                btnSalida.setEnabled(true);
-                btnSalida.setText("Registrar\nSalida");
-
-                if (response.isSuccessful() && response.body() != null) {
-                    hasSalida = true;
-                    updateSalidaUI(currentTime);
-                    showConfirmationMessage("Salida registrada correctamente a las " +
-                            timeFormat.format(currentTime));
-                    updateButtonStates();
-                } else {
-                    Toast.makeText(MainEmpleadoActivity.this,
-                            "Error al registrar salida", Toast.LENGTH_SHORT).show();
+                        try {
+                            if (response.getBoolean("success")) {
+                                hasSalida = true;
+                                String horaSalida = response.getJSONObject("data").getString("hora");
+                                updateSalidaUI(horaSalida);
+                                showConfirmationMessage("Salida registrada: " + horaSalida);
+                                updateButtonStates();
+                            } else {
+                                Toast.makeText(MainEmpleadoActivity.this,
+                                        response.getString("message"), Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (JSONException e) {
+                            Toast.makeText(MainEmpleadoActivity.this,
+                                    "Error al procesar respuesta", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        progressBar.setVisibility(View.GONE);
+                        btnSalida.setEnabled(true);
+                        Toast.makeText(MainEmpleadoActivity.this,
+                                "Error de conexión", Toast.LENGTH_SHORT).show();
+                    }
                 }
-            }
+        );
 
-            @Override
-            public void onFailure(Call<RegistroAsistencia> call, Throwable t) {
-                btnSalida.setEnabled(true);
-                btnSalida.setText("Registrar\nSalida");
-                Toast.makeText(MainEmpleadoActivity.this,
-                        "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        ApiClient.getInstance(this).addToRequestQueue(request);
     }
 
     private void loadTodayAttendance() {
-        ApiEndpoints apiService = ApiClient.getClient().create(ApiEndpoints.class);
-        Call<TodayAttendanceResponse> call = apiService.getTodayAttendance(userId);
+        String url = ApiEndpoints.ASISTENCIA_HOY + "?id_usuario=" + userId;
 
-        call.enqueue(new Callback<TodayAttendanceResponse>() {
-            @Override
-            public void onResponse(Call<TodayAttendanceResponse> call, Response<TodayAttendanceResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    updateUIWithAttendanceData(response.body());
-                } else {
-                    // Si no hay registros para hoy, mantener estado inicial
-                    resetAttendanceUI();
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET, url, null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            if (response.getBoolean("success")) {
+                                JSONObject data = response.getJSONObject("data");
+                                updateUIWithAttendanceData(data);
+                            }
+                        } catch (JSONException e) {
+                            // Error silencioso - puede ser que no haya registros hoy
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // Error silencioso
+                    }
                 }
-            }
+        );
 
-            @Override
-            public void onFailure(Call<TodayAttendanceResponse> call, Throwable t) {
-                // En caso de error, mantener estado actual
-                Toast.makeText(MainEmpleadoActivity.this,
-                        "Error al cargar datos de asistencia", Toast.LENGTH_SHORT).show();
-            }
-        });
+        ApiClient.getInstance(this).addToRequestQueue(request);
     }
 
-    private void updateUIWithAttendanceData(TodayAttendanceResponse data) {
-        hasEntrada = data.getEntrada() != null;
-        hasSalida = data.getSalida() != null;
-
-        if (hasEntrada) {
-            updateEntradaUI(data.getEntrada());
+    private void updateUIWithAttendanceData(JSONObject data) throws JSONException {
+        if (!data.isNull("entrada")) {
+            JSONObject entrada = data.getJSONObject("entrada");
+            String horaEntrada = entrada.getString("hora");
+            hasEntrada = true;
+            updateEntradaUI(horaEntrada);
         }
 
-        if (hasSalida) {
-            updateSalidaUI(data.getSalida());
+        if (!data.isNull("salida")) {
+            JSONObject salida = data.getJSONObject("salida");
+            String horaSalida = salida.getString("hora");
+            hasSalida = true;
+            updateSalidaUI(horaSalida);
         }
 
         updateButtonStates();
     }
 
-    private void updateEntradaUI(Date entradaTime) {
-        tvEntradaTime.setText(timeFormat.format(entradaTime));
-        tvEntradaStatus.setText("✓");
+    private void updateEntradaUI(String hora) {
+        tvEntradaTime.setText(hora);
+        tvEntradaStatus.setText("✓ Registrada");
         tvEntradaStatus.setTextColor(getResources().getColor(R.color.success_color));
     }
 
-    private void updateSalidaUI(Date salidaTime) {
-        tvSalidaTime.setText(timeFormat.format(salidaTime));
-        tvSalidaStatus.setText("✓");
+    private void updateSalidaUI(String hora) {
+        tvSalidaTime.setText(hora);
+        tvSalidaStatus.setText("✓ Registrada");
         tvSalidaStatus.setTextColor(getResources().getColor(R.color.success_color));
-    }
-
-    private void resetAttendanceUI() {
-        hasEntrada = false;
-        hasSalida = false;
-
-        tvEntradaTime.setText("Pendiente");
-        tvSalidaTime.setText("Pendiente");
-        tvEntradaStatus.setText("—");
-        tvSalidaStatus.setText("—");
-        tvEntradaStatus.setTextColor(getResources().getColor(R.color.text_secondary));
-        tvSalidaStatus.setTextColor(getResources().getColor(R.color.text_secondary));
-
-        updateButtonStates();
     }
 
     private void updateButtonStates() {
         btnEntrada.setEnabled(!hasEntrada);
         btnSalida.setEnabled(hasEntrada && !hasSalida);
+
+        if (hasEntrada) {
+            btnEntrada.setText("Entrada\nRegistrada");
+        } else {
+            btnEntrada.setText("Registrar\nEntrada");
+        }
+
+        if (hasSalida) {
+            btnSalida.setText("Salida\nRegistrada");
+        } else {
+            btnSalida.setText("Registrar\nSalida");
+        }
     }
 
     private void showConfirmationMessage(String message) {
         tvConfirmationMessage.setText(message);
         tvConfirmationMessage.setVisibility(View.VISIBLE);
-
-        // Ocultar mensaje después de 5 segundos
         tvConfirmationMessage.postDelayed(() ->
                 tvConfirmationMessage.setVisibility(View.GONE), 5000);
     }
 
-    private void logout() {
-        // Limpiar datos de sesión
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.clear();
-        editor.apply();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.empleado_menu, menu);
+        return true;
+    }
 
-        // Navegar a LoginActivity
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_justificaciones) {
+            startActivity(new Intent(this, JustificadoresActivity.class));
+            return true;
+        } else if (item.getItemId() == R.id.action_logout) {
+            logout();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        sharedPreferences.edit().clear().apply();
         Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-    }
-
-    @Override
-    public void onBackPressed() {
-        // En la activity principal del empleado, el botón back cierra la app
-        moveTaskToBack(true);
-    }
-
-    // Clase auxiliar para la respuesta de asistencia del día
-    private static class TodayAttendanceResponse {
-        private Date entrada;
-        private Date salida;
-
-        public Date getEntrada() { return entrada; }
-        public void setEntrada(Date entrada) { this.entrada = entrada; }
-        public Date getSalida() { return salida; }
-        public void setSalida(Date salida) { this.salida = salida; }
     }
 }

@@ -12,17 +12,7 @@ public class Usuario {
 
     public Usuario() {}
 
-    public Usuario(int idUsuario, String rut, String nombre, String apellido, String correo,
-                   String contrasena, String estadoUsuario, int idRol) {
-        this.idUsuario = idUsuario;
-        this.rut = rut;
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.correo = correo;
-        this.contrasena = contrasena;
-        this.estadoUsuario = estadoUsuario;
-        this.idRol = idRol;
-    }
+
 
     // Getters y Setters
     public int getIdUsuario() { return idUsuario; }
@@ -49,5 +39,14 @@ public class Usuario {
     public void setEstadoUsuario(String estadoUsuario) { this.estadoUsuario = estadoUsuario; }
 
     public int getIdRol() { return idRol; }
-    public void setIdRol(int idRol) { this.idRol = idRol; }
+    public void setIdRol(int idRol) { this.idRol = idRol;}
+
+    // Métodos helper
+    public boolean isActivo() {
+        return "activo".equalsIgnoreCase(estadoUsuario);
+    }
+
+    public String getRolTexto() {
+        return idRol == 1 ? "Administrador" : "Empleado";
+    }
 }
