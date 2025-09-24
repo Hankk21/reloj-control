@@ -78,7 +78,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
         // Botones
         btnEditar = findViewById(R.id.btn_editar);
-        btnResetPassword = findViewById(R.id.btn_reset_password);
+        btnResetPassword = findViewById(R.id.btn_reset_password); //revisar
         btnEliminar = findViewById(R.id.btn_eliminar);
 
         // Estadísticas
