@@ -194,7 +194,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         progressBar.setVisibility(View.GONE);
-                        mostrarError("Error de conexión");
+                        mostrarError("Error de conexión: " + error.getMessage());
                     }
                 }
         );
@@ -266,7 +266,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
         } else {
             layoutNoUsuarios.setVisibility(View.GONE);
             rvUsuarios.setVisibility(View.VISIBLE);
-            layoutPaginacion.setVisibility(View.GONE); // Por ahora sin paginación
+            layoutPaginacion.setVisibility(View.GONE);
 
             usuarioAdapter.updateData(listaUsuariosFiltrada);
         }
@@ -282,7 +282,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
     @Override
     public void onUsuarioClick(Usuario usuario) {
         Intent intent = new Intent(this, VisualizarUsuarioActivity.class);
-        intent.putExtra("usuario", usuario);
+        intent.putExtra("usuario", usuario); // AHORA FUNCIONA
         startActivity(intent);
     }
 
@@ -290,7 +290,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
     public void onEditUsuario(Usuario usuario) {
         Intent intent = new Intent(this, AnadirUsuarioActivity.class);
         intent.putExtra("modo_edicion", true);
-        intent.putExtra("usuario", usuario);
+        intent.putExtra("usuario", usuario); // AHORA FUNCIONA
         startActivity(intent);
     }
 
@@ -361,6 +361,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
         params.put("id_usuario", usuario.getIdUsuario());
         params.put("estado_usuario", usuario.isActivo() ? "inactivo" : "activo");
 
+        // Usar USUARIOS_UPDATE para cambiar estado
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.POST,
                 ApiEndpoints.USUARIOS_UPDATE,
@@ -404,13 +405,16 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_refresh) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_refresh) {
             cargarUsuarios();
             return true;
-        } else if (item.getItemId() == R.id.action_clear_filters) {
+        } else if (itemId == R.id.action_clear_filters) { // ✅ AHORA EXISTE
             limpiarFiltros();
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -422,6 +426,7 @@ public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapte
         filtroRol = "Todos";
         filtroEstado = "Todos";
         aplicarFiltros();
+        Toast.makeText(this, "Filtros limpiados", Toast.LENGTH_SHORT).show();
     }
 
     @Override
