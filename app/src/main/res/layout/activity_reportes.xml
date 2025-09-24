@@ -637,7 +637,6 @@
                     android:textColor="@color/text_secondary" />
 
             </LinearLayout>
-
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
