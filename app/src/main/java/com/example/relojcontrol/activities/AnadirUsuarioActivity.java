@@ -4,12 +4,13 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Patterns;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +19,10 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -27,11 +32,12 @@ import com.example.relojcontrol.models.Usuario;
 import com.example.relojcontrol.network.ApiClient;
 import com.example.relojcontrol.network.ApiEndpoints;
 
-import java.util.regex.Pattern;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class AnadirUsuarioActivity extends AppCompatActivity {
 
@@ -54,13 +60,18 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
     private boolean hasNumber = false;
     private boolean hasUppercase = false;
 
+    // Variables para modo edición
+    private boolean isModoEdicion = false;
+    private Usuario usuarioEdicion;
+
     // Patrones de validación
     private static final Pattern RUT_PATTERN = Pattern.compile("^[0-9]+-[0-9kK]$");
     private static final Pattern PASSWORD_NUMBER = Pattern.compile(".*[0-9].*");
     private static final Pattern PASSWORD_UPPERCASE = Pattern.compile(".*[A-Z].*");
 
-    // Roles disponibles
+    // Roles disponibles (adaptados a tu modelo)
     private String[] roles = {"Empleado", "Administrador"};
+    private int[] rolesIds = {2, 1}; // 1: Administrador, 2: Empleado
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +83,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
         setupRolSpinner();
         setupValidation();
         setupClickListeners();
+        checkModoEdicion();
     }
 
     private void initViews() {
@@ -114,10 +126,46 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
         ivPasswordUppercase = findViewById(R.id.iv_password_uppercase);
     }
 
+    private void checkModoEdicion() {
+        if (getIntent() != null && getIntent().hasExtra("modo_edicion")) {
+            isModoEdicion = getIntent().getBooleanExtra("modo_edicion", false);
+            usuarioEdicion = (Usuario) getIntent().getSerializableExtra("usuario");
+
+            if (isModoEdicion && usuarioEdicion != null) {
+                setupModoEdicion();
+            }
+        }
+    }
+
+    private void setupModoEdicion() {
+        // Cambiar título de la toolbar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Editar Usuario");
+        }
+
+        // Llenar campos con datos del usuario
+        etNombre.setText(usuarioEdicion.getNombre());
+        etApellido.setText(usuarioEdicion.getApellido());
+        etRut.setText(usuarioEdicion.getRut());
+        etCorreo.setText(usuarioEdicion.getCorreo());
+
+        // Establecer rol basado en idRol
+        String rolTexto = usuarioEdicion.getRolTexto();
+        spinnerRol.setText(rolTexto, false);
+
+        // Cambiar texto del botón
+        btnCrearUsuario.setText("Actualizar Usuario");
+
+        // En edición, la contraseña no es obligatoria
+        tilPassword.setHint("Contraseña (dejar vacío para no cambiar)");
+        isPasswordValid = true; // En edición, la contraseña es opcional
+    }
+
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(isModoEdicion ? "Editar Usuario" : "Añadir Usuario");
         }
 
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -130,7 +178,9 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
                 roles
         );
         spinnerRol.setAdapter(adapter);
-        spinnerRol.setText(roles[0], false); // Default to "Empleado"
+        if (!isModoEdicion) {
+            spinnerRol.setText(roles[0], false); // Default to "Empleado"
+        }
     }
 
     private void setupValidation() {
@@ -148,19 +198,21 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Password validation
-        etPassword.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        // Password validation (solo aplica en creación)
+        if (!isModoEdicion) {
+            etPassword.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                validatePassword(s.toString());
-            }
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    validatePassword(s.toString());
+                }
 
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
 
         // General form validation
         TextWatcher formValidationWatcher = new TextWatcher() {
@@ -186,7 +238,11 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
 
         btnCrearUsuario.setOnClickListener(v -> {
             if (validateAllFields()) {
-                crearUsuario();
+                if (isModoEdicion) {
+                    actualizarUsuario();
+                } else {
+                    crearUsuario();
+                }
             }
         });
     }
@@ -206,7 +262,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
             etRut.removeTextChangedListener((TextWatcher) etRut.getTag());
             etRut.setText(formattedRut);
             etRut.setSelection(formattedRut.length());
-            etRut.addTextChangedListener((TextWatcher) etRut.getTag());
+            etRut.addTextChangedListener((TextWatcher) this);
         }
 
         // Validar formato
@@ -282,7 +338,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
             int remainder = sum % 11;
             String calculatedDigit = remainder == 0 ? "0" : remainder == 1 ? "K" : String.valueOf(11 - remainder);
 
-            return calculatedDigit.equals(digit);
+            return calculatedDigit.equalsIgnoreCase(digit);
         } catch (NumberFormatException e) {
             return false;
         }
@@ -320,7 +376,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
                 !etApellido.getText().toString().trim().isEmpty() &&
                 isRutValid &&
                 isValidEmail(etCorreo.getText().toString().trim()) &&
-                isPasswordValid;
+                (isModoEdicion ? true : isPasswordValid); // En edición, password es opcional
 
         btnCrearUsuario.setEnabled(isFormValid);
     }
@@ -360,94 +416,240 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
             tilCorreo.setError(null);
         }
 
-        return isValid && isRutValid && isPasswordValid;
+        // Validar password solo en creación
+        if (!isModoEdicion && !isPasswordValid) {
+            tilPassword.setError("La contraseña no cumple los requisitos");
+            isValid = false;
+        } else {
+            tilPassword.setError(null);
+        }
+
+        return isValid && isRutValid;
     }
 
+    // 🎯 **MÉTODO ADAPTADO - CREAR USUARIO**
     private void crearUsuario() {
-        // Mostrar loading
         layoutLoading.setVisibility(View.VISIBLE);
         btnCrearUsuario.setEnabled(false);
         cardSuccess.setVisibility(View.GONE);
 
-        // Crear objeto usuario
-        Usuario usuario = new Usuario();
-        usuario.setNombre(etNombre.getText().toString().trim());
-        usuario.setApellido(etApellido.getText().toString().trim());
-        usuario.setRut(etRut.getText().toString().trim());
-        usuario.setCorreo(etCorreo.getText().toString().trim());
-        usuario.setPassword(etPassword.getText().toString());
-        usuario.setRol(spinnerRol.getText().toString());
+        try {
+            // Obtener idRol basado en la selección
+            String rolSeleccionado = spinnerRol.getText().toString();
+            int idRol = getRolId(rolSeleccionado);
 
-        // Llamada a la API
-        ApiEndpoints apiService = ApiClient.getClient().create(ApiEndpoints.class);
-        Call<Usuario> call = apiService.crearUsuario(usuario);
+            Map<String, Object> params = new HashMap<>();
+            params.put("rut", etRut.getText().toString().trim());
+            params.put("nombre", etNombre.getText().toString().trim());
+            params.put("apellido", etApellido.getText().toString().trim());
+            params.put("correo", etCorreo.getText().toString().trim());
+            params.put("contrasena", etPassword.getText().toString());
+            params.put("id_rol", idRol);
 
-        call.enqueue(new Callback<Usuario>() {
-            @Override
-            public void onResponse(Call<Usuario> call, Response<Usuario> response) {
-                layoutLoading.setVisibility(View.GONE);
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    ApiEndpoints.USUARIOS_CREATE,
+                    new JSONObject(params),
+                    new Response.Listener<JSONObject>() {
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            layoutLoading.setVisibility(View.GONE);
+                            try {
+                                if (response.getBoolean("success")) {
+                                    mostrarMensajeExito("Usuario creado exitosamente");
+                                    limpiarFormulario();
+                                } else {
+                                    btnCrearUsuario.setEnabled(true);
+                                    String error = response.getString("message");
+                                    Toast.makeText(AnadirUsuarioActivity.this,
+                                            "Error: " + error,
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            } catch (JSONException e) {
+                                btnCrearUsuario.setEnabled(true);
+                                Toast.makeText(AnadirUsuarioActivity.this,
+                                        "Error al procesar respuesta",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            layoutLoading.setVisibility(View.GONE);
+                            btnCrearUsuario.setEnabled(true);
+                            Toast.makeText(AnadirUsuarioActivity.this,
+                                    "Error de conexión: " + error.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+            );
 
-                if (response.isSuccessful() && response.body() != null) {
-                    // Éxito
-                    mostrarMensajeExito();
-                    limpiarFormulario();
-                } else {
-                    // Error del servidor
-                    btnCrearUsuario.setEnabled(true);
-                    Toast.makeText(AnadirUsuarioActivity.this,
-                            "Error al crear usuario: " + response.message(),
-                            Toast.LENGTH_LONG).show();
-                }
-            }
+            ApiClient.getInstance(this).addToRequestQueue(request);
 
-            @Override
-            public void onFailure(Call<Usuario> call, Throwable t) {
-                layoutLoading.setVisibility(View.GONE);
-                btnCrearUsuario.setEnabled(true);
-                Toast.makeText(AnadirUsuarioActivity.this,
-                        "Error de conexión: " + t.getMessage(),
-                        Toast.LENGTH_LONG).show();
-            }
-        });
+        } catch (JSONException e) {
+            layoutLoading.setVisibility(View.GONE);
+            btnCrearUsuario.setEnabled(true);
+            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void mostrarMensajeExito() {
+    // 🎯 **MÉTODO ADAPTADO - ACTUALIZAR USUARIO**
+    private void actualizarUsuario() {
+        layoutLoading.setVisibility(View.VISIBLE);
+        btnCrearUsuario.setEnabled(false);
+        cardSuccess.setVisibility(View.GONE);
+
+        try {
+            // Obtener idRol basado en la selección
+            String rolSeleccionado = spinnerRol.getText().toString();
+            int idRol = getRolId(rolSeleccionado);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("id_usuario", usuarioEdicion.getIdUsuario());
+            params.put("rut", etRut.getText().toString().trim());
+            params.put("nombre", etNombre.getText().toString().trim());
+            params.put("apellido", etApellido.getText().toString().trim());
+            params.put("correo", etCorreo.getText().toString().trim());
+            params.put("id_rol", idRol);
+
+            // Solo enviar password si no está vacío
+            String password = etPassword.getText().toString();
+            if (!password.isEmpty()) {
+                params.put("contrasena", password);
+            }
+
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    ApiEndpoints.USUARIOS_UPDATE,
+                    new JSONObject(params),
+                    new Response.Listener<JSONObject>() {
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            layoutLoading.setVisibility(View.GONE);
+                            try {
+                                if (response.getBoolean("success")) {
+                                    mostrarMensajeExito("Usuario actualizado exitosamente");
+                                    setResult(RESULT_OK);
+                                    finish(); // Cerrar actividad después de actualizar
+                                } else {
+                                    btnCrearUsuario.setEnabled(true);
+                                    String error = response.getString("message");
+                                    Toast.makeText(AnadirUsuarioActivity.this,
+                                            "Error: " + error,
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            } catch (JSONException e) {
+                                btnCrearUsuario.setEnabled(true);
+                                Toast.makeText(AnadirUsuarioActivity.this,
+                                        "Error al procesar respuesta",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            layoutLoading.setVisibility(View.GONE);
+                            btnCrearUsuario.setEnabled(true);
+                            Toast.makeText(AnadirUsuarioActivity.this,
+                                    "Error de conexión: " + error.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+            );
+
+            ApiClient.getInstance(this).addToRequestQueue(request);
+
+        } catch (JSONException e) {
+            layoutLoading.setVisibility(View.GONE);
+            btnCrearUsuario.setEnabled(true);
+            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 🎯 **MÉTODO PARA OBTENER ID DEL ROL**
+    private int getRolId(String rolTexto) {
+        for (int i = 0; i < roles.length; i++) {
+            if (roles[i].equals(rolTexto)) {
+                return rolesIds[i];
+            }
+        }
+        return 2; // Default: Empleado
+    }
+
+    // 🏗️ **MENÚ DE NAVEGACIÓN**
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.menu_usuarios) {
+            // Ya estamos en usuarios
+            return true;
+        } else if (id == R.id.menu_justificadores) {
+            // Ir a JustificadoresActivity
+            // Intent intent = new Intent(this, JustificadoresActivity.class);
+            // startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_reportes) {
+            // Ir a ReportesActivity
+            // Intent intent = new Intent(this, ReportesActivity.class);
+            // startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_cerrar_sesion) {
+            // Cerrar sesión
+            finishAffinity();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void mostrarMensajeExito(String mensaje) {
         String nombre = etNombre.getText().toString().trim();
         String apellido = etApellido.getText().toString().trim();
-        tvSuccessMessage.setText("El usuario " + nombre + " " + apellido + " ha sido registrado exitosamente en el sistema.");
+        tvSuccessMessage.setText(mensaje);
         cardSuccess.setVisibility(View.VISIBLE);
     }
 
     private void limpiarFormulario() {
-        etNombre.setText("");
-        etApellido.setText("");
-        etRut.setText("");
-        etCorreo.setText("");
-        etPassword.setText("");
-        spinnerRol.setText(roles[0], false);
+        if (!isModoEdicion) {
+            etNombre.setText("");
+            etApellido.setText("");
+            etRut.setText("");
+            etCorreo.setText("");
+            etPassword.setText("");
+            spinnerRol.setText(roles[0], false);
 
-        // Limpiar errores
-        tilNombre.setError(null);
-        tilApellido.setError(null);
-        tilRut.setError(null);
-        tilCorreo.setError(null);
-        tilPassword.setError(null);
+            // Limpiar errores
+            tilNombre.setError(null);
+            tilApellido.setError(null);
+            tilRut.setError(null);
+            tilCorreo.setError(null);
+            tilPassword.setError(null);
 
-        // Resetear validaciones
-        layoutRutValidation.setVisibility(View.GONE);
-        isRutValid = false;
-        isPasswordValid = false;
-        hasMinLength = false;
-        hasNumber = false;
-        hasUppercase = false;
+            // Resetear validaciones
+            layoutRutValidation.setVisibility(View.GONE);
+            isRutValid = false;
+            isPasswordValid = false;
+            hasMinLength = false;
+            hasNumber = false;
+            hasUppercase = false;
 
-        updatePasswordValidationIcon(ivPasswordLength, false);
-        updatePasswordValidationIcon(ivPasswordNumber, false);
-        updatePasswordValidationIcon(ivPasswordUppercase, false);
+            updatePasswordValidationIcon(ivPasswordLength, false);
+            updatePasswordValidationIcon(ivPasswordNumber, false);
+            updatePasswordValidationIcon(ivPasswordUppercase, false);
 
-        btnCrearUsuario.setEnabled(false);
+            btnCrearUsuario.setEnabled(false);
 
-        // Ocultar mensaje de éxito después de 5 segundos
-        cardSuccess.postDelayed(() -> cardSuccess.setVisibility(View.GONE), 5000);
+            // Ocultar mensaje de éxito después de 5 segundos
+            cardSuccess.postDelayed(() -> cardSuccess.setVisibility(View.GONE), 5000);
+        }
     }
 }

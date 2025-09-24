@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Menú para Admin -->
+    <item
+        android:id="@+id/menu_dashboard"
+        android:title="Dashboard"
+        android:icon="@drawable/ic_dashboard"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_usuarios"
+        android:title="Usuarios"
+        android:icon="@drawable/ic_usuarios"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_justificaciones"
+        android:title="Justificaciones"
+        android:icon="@drawable/ic_justificaciones"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_licencias"
+        android:title="Licencias"
+        android:icon="@drawable/ic_licencias"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_reportes"
+        android:title="Reportes"
+        android:icon="@drawable/ic_reportes"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_cerrar_sesion"
+        android:title="Cerrar Sesión"
+        android:icon="@drawable/ic_logout"
+        app:showAsAction="never" />
+
+</menu>
