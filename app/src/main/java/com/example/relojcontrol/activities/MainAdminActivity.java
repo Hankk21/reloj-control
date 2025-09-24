@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,28 +14,24 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.example.relojcontrol.R;
-import com.example.relojcontrol.models.DashboardData;
 import com.example.relojcontrol.network.ApiClient;
 import com.example.relojcontrol.network.ApiEndpoints;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MainAdminActivity extends AppCompatActivity {
 
-    // Constants
-    private static final String PREFS_NAME = "LoginPrefs";
-
-    // Views
-    private Toolbar toolbar;
-    private TextView tvEmpleadosPresentes, tvEmpleadosAusentes;
-    private CardView cardUsuarios, cardJustificaciones, cardReportes;
-    private View chartAtrasos;
-
-    // Variables
     private SharedPreferences sharedPreferences;
+    private Toolbar toolbar;
+    private ProgressBar progressBar;
+    private TextView tvWelcome, tvEmpleadosTotales, tvEmpleadosPresentes, tvEmpleadosAusentes, tvAtrasosHoy, tvJustificacionesPendientes;
+    private CardView cardUsuarios, cardJustificaciones, cardReportes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,30 +44,24 @@ public class MainAdminActivity extends AppCompatActivity {
         loadDashboardData();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Recargar datos del dashboard cuando se regrese a esta activity
-        loadDashboardData();
-    }
-
     private void initViews() {
+        sharedPreferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
         toolbar = findViewById(R.id.toolbar);
+        progressBar = findViewById(R.id.progressBar);
 
-        // Dashboard counters
+        tvWelcome = findViewById(R.id.tv_welcome);
+        tvEmpleadosTotales = findViewById(R.id.tv_empleados_totales);
         tvEmpleadosPresentes = findViewById(R.id.tv_empleados_presentes);
         tvEmpleadosAusentes = findViewById(R.id.tv_empleados_ausentes);
+        tvAtrasosHoy = findViewById(R.id.tv_atrasos_hoy);
+        tvJustificacionesPendientes = findViewById(R.id.tv_justificaciones_pendientes);
 
-        // Action cards
         cardUsuarios = findViewById(R.id.card_usuarios);
         cardJustificaciones = findViewById(R.id.card_justificaciones);
         cardReportes = findViewById(R.id.card_reportes);
 
-        // Chart
-        chartAtrasos = findViewById(R.id.chart_atrasos);
-
-        // SharedPreferences
-        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String userName = sharedPreferences.getString("user_name", "Administrador");
+        tvWelcome.setText("Bienvenido, " + userName);
     }
 
     private void setupToolbar() {
@@ -81,51 +72,44 @@ public class MainAdminActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        // Card Usuarios - navegar a UsuariosActivity
         cardUsuarios.setOnClickListener(v -> {
-            Intent intent = new Intent(this, UsuariosActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, UsuariosActivity.class));
         });
 
-        // Card Justificaciones - navegar a JustificadoresActivity
         cardJustificaciones.setOnClickListener(v -> {
-            Intent intent = new Intent(this, JustificadoresActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, JustificadoresActivity.class));
         });
 
-        // Card Reportes - navegar a ReportesActivity
         cardReportes.setOnClickListener(v -> {
-            Intent intent = new Intent(this, ReportesActivity.class);
-            startActivity(intent);
-        });
-
-        // Chart click para ver detalles
-        chartAtrasos.setOnClickListener(v -> {
-            // TODO: Implementar navegación a vista detallada de atrasos
-            Toast.makeText(this, "Ver detalles de atrasos", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, ReportesActivity.class));
         });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.admin_menu, menu);
-        return true;
+        // Verificar si el archivo de menú existe antes de inflarlo
+        try {
+            getMenuInflater().inflate(R.menu.admin_menu, menu);
+            return true;
+        } catch (Exception e) {
+            // Si no existe el menú, no mostrar errores
+            return true;
+        }
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+        int itemId = item.getItemId();
 
-        if (id == R.id.action_profile) {
-            // TODO: Abrir perfil de usuario
-            Toast.makeText(this, "Perfil de usuario", Toast.LENGTH_SHORT).show();
+        // Usar IDs de recursos de manera segura
+        if (itemId == R.id.action_refresh) {
+            loadDashboardData();
             return true;
-        } else if (id == R.id.action_settings) {
-            // TODO: Abrir configuraciones
-            Toast.makeText(this, "Configuraciones", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (id == R.id.action_logout) {
+        } else if (itemId == R.id.action_logout) {
             logout();
+            return true;
+        } else if (itemId == R.id.action_profile) {
+            showUserProfile();
             return true;
         }
 
@@ -133,73 +117,72 @@ public class MainAdminActivity extends AppCompatActivity {
     }
 
     private void loadDashboardData() {
-        ApiEndpoints apiService = ApiClient.getClient().create(ApiEndpoints.class);
-        Call<DashboardData> call = apiService.getDashboardData();
+        progressBar.setVisibility(View.VISIBLE);
 
-        call.enqueue(new Callback<DashboardData>() {
-            @Override
-            public void onResponse(Call<DashboardData> call, Response<DashboardData> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    updateDashboardUI(response.body());
-                } else {
-                    // En caso de error, mostrar datos por defecto o mensaje de error
-                    Toast.makeText(MainAdminActivity.this,
-                            "Error al cargar datos del dashboard", Toast.LENGTH_SHORT).show();
-                    setDefaultDashboardData();
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                ApiEndpoints.DASHBOARD_ADMIN,
+                null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        progressBar.setVisibility(View.GONE);
+                        try {
+                            if (response.getBoolean("success")) {
+                                JSONObject data = response.getJSONObject("data");
+                                updateDashboardUI(data);
+                            } else {
+                                showError("Error al cargar datos");
+                            }
+                        } catch (JSONException e) {
+                            showError("Error en formato de respuesta");
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        progressBar.setVisibility(View.GONE);
+                        showError("Error de conexión");
+                    }
                 }
-            }
+        );
 
-            @Override
-            public void onFailure(Call<DashboardData> call, Throwable t) {
-                Toast.makeText(MainAdminActivity.this,
-                        "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                setDefaultDashboardData();
-            }
-        });
+        ApiClient.getInstance(this).addToRequestQueue(request);
     }
 
-    private void updateDashboardUI(DashboardData data) {
-        // Actualizar contadores
-        tvEmpleadosPresentes.setText(String.valueOf(data.getEmpleadosPresentes()));
-        tvEmpleadosAusentes.setText(String.valueOf(data.getEmpleadosAusentes()));
-
-        // TODO: Actualizar gráfico de atrasos cuando se implemente
-        // updateChartAtrasos(data.getAtrasosSemanales());
+    private void updateDashboardUI(JSONObject data) throws JSONException {
+        tvEmpleadosTotales.setText(String.valueOf(data.getInt("empleados_totales")));
+        tvEmpleadosPresentes.setText(String.valueOf(data.getInt("empleados_presentes")));
+        tvEmpleadosAusentes.setText(String.valueOf(data.getInt("empleados_ausentes")));
+        tvAtrasosHoy.setText(String.valueOf(data.getInt("atrasos_hoy")));
+        tvJustificacionesPendientes.setText(String.valueOf(data.getInt("justificaciones_pendientes")));
     }
 
-    private void setDefaultDashboardData() {
-        // Datos por defecto en caso de error
-        tvEmpleadosPresentes.setText("--");
-        tvEmpleadosAusentes.setText("--");
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        tvEmpleadosTotales.setText("0");
+        tvEmpleadosPresentes.setText("0");
+        tvEmpleadosAusentes.setText("0");
+        tvAtrasosHoy.setText("0");
+        tvJustificacionesPendientes.setText("0");
+    }
+
+    private void showUserProfile() {
+        Toast.makeText(this, "Perfil de usuario", Toast.LENGTH_SHORT).show();
     }
 
     private void logout() {
-        // Limpiar datos de sesión
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.clear();
-        editor.apply();
-
-        // Navegar a LoginActivity
+        sharedPreferences.edit().clear().apply();
         Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
 
-    // Método para refrescar datos (puede ser llamado desde otras activities)
-    public void refreshDashboard() {
-        loadDashboardData();
-    }
-
-    // Método para manejar el botón de navegación del menú hamburguesa
-    private void toggleDrawer() {
-        // TODO: Implementar drawer navigation si se decide usar
-        Toast.makeText(this, "Menú de navegación", Toast.LENGTH_SHORT).show();
-    }
-
     @Override
-    public void onBackPressed() {
-        // En la activity principal del admin, el botón back cierra la app
-        moveTaskToBack(true);
+    protected void onResume() {
+        super.onResume();
+        loadDashboardData();
     }
 }

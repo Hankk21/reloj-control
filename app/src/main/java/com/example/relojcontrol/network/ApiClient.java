@@ -10,26 +10,36 @@ public class ApiClient {
     private RequestQueue requestQueue;
     private static Context ctx;
 
-    private ApiClient(Context context){ /*utilizamos patron singleton para administrar el requestQueue*/
-        ctx = context;
+    private ApiClient(Context context) {
+        ctx = context.getApplicationContext();
         requestQueue = getRequestQueue();
     }
 
-    public static synchronized ApiClient getInstance(Context context){
-        if (instance == null){
+    public static synchronized ApiClient getInstance(Context context) {
+        if (instance == null) {
             instance = new ApiClient(context);
         }
         return instance;
     }
 
-    public RequestQueue getRequestQueue(){
-        if (requestQueue == null){
-            requestQueue = Volley.newRequestQueue(ctx.getApplicationContext());
+    public RequestQueue getRequestQueue() {
+        if (requestQueue == null) {
+            requestQueue = Volley.newRequestQueue(ctx);
+
+            // Opcional: Configurar timeout global
+            // requestQueue.getCache().initialize();
         }
         return requestQueue;
     }
 
-    public <T> void addToRequestQueue(Request<T> req){
+    public <T> void addToRequestQueue(Request<T> req) {
         getRequestQueue().add(req);
+    }
+
+    // Metodo opcional para cancelar requests pendientes
+    public void cancelPendingRequests(String tag) {
+        if (requestQueue != null) {
+            requestQueue.cancelAll(tag);
+        }
     }
 }
