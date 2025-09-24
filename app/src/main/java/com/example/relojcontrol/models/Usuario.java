@@ -1,6 +1,8 @@
 package com.example.relojcontrol.models;
 
-public class Usuario {
+import java.io.Serializable;
+
+public class Usuario implements Serializable {
     private int idUsuario;
     private String rut;
     private String nombre;
