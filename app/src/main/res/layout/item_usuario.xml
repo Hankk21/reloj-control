@@ -21,7 +21,7 @@
             android:id="@+id/iv_avatar"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/ic_person_placeholder"
+            android:src="@drawable/ic_outline"
             android:layout_marginEnd="12dp"
             app:civ_border_width="1dp"
             app:civ_border_color="@color/text_hint" />

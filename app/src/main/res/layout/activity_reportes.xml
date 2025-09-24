@@ -161,7 +161,7 @@
                             android:hint="Seleccionar usuario"
                             android:inputType="none"
                             android:text="Todos los usuarios"
-                            android:drawableStart="@drawable/ic_people"
+                            android:drawableStart="@drawable/ic_person"
                             android:drawablePadding="12dp" />
 
                     </com.google.android.material.textfield.TextInputLayout>
