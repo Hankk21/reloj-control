@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_mi_asistencia"
+        android:title="Mi Asistencia"
+        android:icon="@drawable/ic_asistencia"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_mis_justificaciones"
+        android:title="Mis Justificaciones"
+        android:icon="@drawable/ic_justificaciones"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_mis_licencias"
+        android:title="Mis Licencias"
+        android:icon="@drawable/ic_licencias"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_cerrar_sesion"
+        android:title="Cerrar Sesión"
+        android:icon="@drawable/ic_logout"
+        app:showAsAction="never" />
+
+</menu>

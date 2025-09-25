@@ -8,14 +8,7 @@ public class Reporte {
 
     public Reporte() {}
 
-    public Reporte(int idReporte, int tipoReporte, String fecha, int idUsuario) {
-        this.idReporte = idReporte;
-        this.tipoReporte = tipoReporte;
-        this.fecha = fecha;
-        this.idUsuario = idUsuario;
-    }
-
-    // Getters y Setters
+    // Getters y Setters (tus originales)
     public int getIdReporte() { return idReporte; }
     public void setIdReporte(int idReporte) { this.idReporte = idReporte; }
 
@@ -27,4 +20,16 @@ public class Reporte {
 
     public int getIdUsuario() { return idUsuario; }
     public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
+
+    // MÉTODO UTILITARIO (NUEVO)
+    public String getTipoTexto() {
+        switch (tipoReporte) {
+            case 1: return "Asistencias";
+            case 2: return "Horas Trabajadas";
+            case 3: return "Atrasos";
+            case 4: return "Justificaciones";
+            case 5: return "Licencias";
+            default: return "Reporte " + tipoReporte;
+        }
+    }
 }

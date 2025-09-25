@@ -24,7 +24,7 @@
     <color name="text_hint">#BDBDBD</color>
 
     <!-- Colores de fondo -->
-    <color name="background_color">#FAFAFA</color>
+    <color name="background_color">#F5F5F5</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
@@ -33,4 +33,5 @@
     <color name="pendiente_color">#FFC107</color>
     <color name="aceptado_color">#4CAF50</color>
     <color name="rechazado_color">#F44336</color>
+    <color name="info_color">#2196F3</color>
 </resources>
