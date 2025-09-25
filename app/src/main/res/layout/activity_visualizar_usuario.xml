@@ -54,7 +54,7 @@
                             android:id="@+id/iv_avatar"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
-                            android:src="@drawable/ic_person_placeholder"
+                            android:src="@drawable/ic_person"
                             android:background="@drawable/bg_avatar"
                             android:layout_marginEnd="20dp"
                             android:scaleType="centerCrop" />
@@ -154,7 +154,7 @@
                             <ImageView
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
-                                android:src="@drawable/ic_reports"
+                                android:src="@drawable/ic_badge"
                                 android:layout_marginEnd="12dp"
                                 app:tint="@color/primary_color" />
 
@@ -206,8 +206,8 @@
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
                                 android:src="@drawable/ic_email"
-                                android:layout_marginEnd="12dp"
-                                app:tint="@color/primary_color" />
+                                android:layout_marginEnd="12dp" />
+
 
                             <LinearLayout
                                 android:layout_width="0dp"

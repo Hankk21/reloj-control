@@ -73,25 +73,6 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Apellido -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/til_apellido"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        app:boxStrokeColor="@color/primary_color"
-                        app:hintTextColor="@color/primary_color"
-                        app:errorEnabled="true">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/et_apellido"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Apellido *"
-                            android:inputType="textPersonName|textCapWords"
-                            android:maxLength="50"
-                            android:drawableStart="@drawable/ic_person"
-                            android:drawablePadding="12dp" />
-                    </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- RUT -->
                     <com.google.android.material.textfield.TextInputLayout
@@ -164,6 +145,26 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Contraseña -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_apellido"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:boxStrokeColor="@color/primary_color"
+                        app:errorEnabled="true"
+                        app:hintTextColor="@color/primary_color">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_apellido"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:drawableStart="@drawable/ic_person"
+                            android:drawablePadding="12dp"
+                            android:hint="Apellido *"
+                            android:inputType="textPersonName|textCapWords"
+                            android:maxLength="50" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/til_password"
                         android:layout_width="match_parent"
