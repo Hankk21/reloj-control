@@ -17,13 +17,12 @@
     <item
         android:id="@+id/menu_filtrar"
         android:title="Filtrar"
-        android:icon="@drawable/ic_filter"
+        android:icon="@drawable/ic_filter_alt"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_exportar"
         android:title="Exportar"
-        android:icon="@drawable/ic_export"
         app:showAsAction="never" />
 
 </menu>

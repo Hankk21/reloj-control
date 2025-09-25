@@ -5,19 +5,17 @@
     <item
         android:id="@+id/menu_mi_asistencia"
         android:title="Mi Asistencia"
-        android:icon="@drawable/ic_asistencia"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_mis_justificaciones"
         android:title="Mis Justificaciones"
-        android:icon="@drawable/ic_justificaciones"
+        android:icon="@drawable/ic_justifications"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_mis_licencias"
         android:title="Mis Licencias"
-        android:icon="@drawable/ic_licencias"
         app:showAsAction="never" />
 
     <item
