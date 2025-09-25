@@ -17,14 +17,13 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <de.hdodenhof.circleimageview.CircleImageView
+        <ImageView
             android:id="@+id/iv_avatar"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/ic_person_placeholder"
+            android:src="@drawable/ic_people_outline"
             android:layout_marginEnd="12dp"
-            app:civ_border_width="1dp"
-            app:civ_border_color="@color/text_hint" />
+            android:padding="8dp" />
 
         <LinearLayout
             android:layout_width="0dp"
