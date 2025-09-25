@@ -1,7 +1,7 @@
 package com.example.relojcontrol.network;
 
 public class ApiEndpoints {
-    private static final String BASE_URL = "http://10.0.2.2/asistencia-api";
+    private static final String BASE_URL = "http://10.0.2.2/asistencia-api/api/";
 
     /* Auth */
     public static final String LOGIN = BASE_URL + "auth/login.php";
