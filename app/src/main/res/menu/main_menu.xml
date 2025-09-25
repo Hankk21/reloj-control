@@ -39,4 +39,16 @@
         android:icon="@drawable/ic_logout"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_refresh"
+        android:title="Refresh"
+        android:icon="@drawable/ic_refresh"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_clear_filters"
+        android:title="Limpiar filtros"
+        app:showAsAction="ifRoom" />
+
+
 </menu>

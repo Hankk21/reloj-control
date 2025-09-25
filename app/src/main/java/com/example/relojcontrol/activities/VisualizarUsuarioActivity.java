@@ -189,7 +189,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private void resetPassword() {
         progressBar.setVisibility(View.VISIBLE);
 
-        try {
+
             Map<String, Object> params = new HashMap<>();
             params.put("id_usuario", usuario.getIdUsuario());
             params.put("nueva_contrasena", "123456"); // Password por defecto
@@ -232,10 +232,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
     private void eliminarUsuario() {
@@ -250,7 +247,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private void confirmarEliminacion() {
         progressBar.setVisibility(View.VISIBLE);
 
-        try {
+
             Map<String, Object> params = new HashMap<>();
             params.put("id_usuario", usuario.getIdUsuario());
 
@@ -294,10 +291,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
     private void cargarEstadisticas() {
@@ -359,7 +353,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private void actualizarEstadoUsuario(String nuevoEstado) {
         progressBar.setVisibility(View.VISIBLE);
 
-        try {
+
             Map<String, Object> params = new HashMap<>();
             params.put("id_usuario", usuario.getIdUsuario());
             params.put("estado_usuario", nuevoEstado);
@@ -404,9 +398,6 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
-        }
+
     }
 }

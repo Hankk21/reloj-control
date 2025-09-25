@@ -4,6 +4,8 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorOnSurface">
+
+    <!-- Líneas horizontales -->
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M8,6h8M8,10h8M8,14h5"
@@ -11,25 +13,25 @@
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"/>
-    <rect
-        android:width="16"
-        android:height="20"
-        android:x="4"
-        android:y="2"
-        android:rx="2"
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="@android:color/black"
-        android:strokeWidth="2"/>
-    <circle
-        android:cx="17"
-        android:cy="17"
-        android:r="3"
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="@android:color/black"
-        android:strokeWidth="2"/>
+
+    <!-- Rectángulo convertido a path -->
     <path
         android:fillColor="@android:color/transparent"
-        android:pathData="m19,15 -4,4"
+        android:pathData="M4,2 H20 V22 H4 Z"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="2"/>
+
+    <!-- Círculo convertido a path (centro 17,17, radio 3) -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M17,17 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"
+        android:strokeColor="@android:color/black"
+        android:strokeWidth="2"/>
+
+    <!-- Línea diagonal -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M19,15 L15,19"
         android:strokeColor="@android:color/black"
         android:strokeWidth="2"
         android:strokeLineCap="round"/>

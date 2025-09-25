@@ -4,6 +4,8 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorOnSurface">
+
+    <!-- Contorno del rectángulo -->
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M3,3h18c1.1,0 2,0.9 2,2v14c0,1.1 -0.9,2 -2,2H3c-1.1,0 -2,-0.9 -2,-2V5C1,3.9 1.9,3 3,3z"
@@ -11,13 +13,23 @@
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"/>
+
+    <!-- Líneas horizontales -->
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M7,8h10 M7,12h10 M7,16h6"
         android:strokeColor="@android:color/black"
         android:strokeWidth="2"
         android:strokeLineCap="round"/>
-    <circle android:cx="5" android:cy="8" android:r="1" android:fillColor="@android:color/black"/>
-    <circle android:cx="5" android:cy="12" android:r="1" android:fillColor="@android:color/black"/>
-    <circle android:cx="5" android:cy="16" android:r="1" android:fillColor="@android:color/black"/>
+
+    <!-- Círculos reemplazados por paths -->
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M5,8 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0"/>
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M5,12 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0"/>
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M5,16 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0"/>
 </vector>
