@@ -5,7 +5,6 @@
     <item
         android:id="@+id/menu_nueva_justificacion"
         android:title="Nueva Justificación"
-        android:icon="@drawable/ic_add"
         app:showAsAction="ifRoom" />
 
     <item
@@ -17,13 +16,11 @@
     <item
         android:id="@+id/menu_filtrar_estado"
         android:title="Filtrar por Estado"
-        android:icon="@drawable/ic_filter_list"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_ver_todas"
         android:title="Ver Todas"
-        android:icon="@drawable/ic_list"
         app:showAsAction="never" />
 
 </menu>

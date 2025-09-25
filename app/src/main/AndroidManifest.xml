@@ -2,6 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- PERMISOS - van FUERA de <application> -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Para Android 13+ (targetSdk 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,19 +21,51 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RelojControl">
+
+        <!-- Activity principal (LoginActivity) -->
         <activity
             android:name=".activities.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Permiso para escribir en almacenamiento externo -->
-        <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-        <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
+        <!-- Activities adicionales basadas en tus errores -->
+        <activity
+            android:name=".activities.ReportesActivity"
+            android:exported="false"
+            android:parentActivityName=".activities.LoginActivity" />
+
+        <activity
+            android:name=".activities.JustificadoresActivity"
+            android:exported="false"
+            android:parentActivityName=".activities.LoginActivity" />
+
+        <activity
+            android:name=".activities.VisualizarUsuarioActivity"
+            android:exported="false"
+            android:parentActivityName=".activities.LoginActivity" />
+
+        <activity
+            android:name=".activities.MainEmpleadoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.AnadirUsuarioActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.UsuariosActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.MainAdminActivity"
+            android:exported="false" />
+        -->
+
+        <!-- FileProvider para compartir archivos -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -33,6 +75,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
     </application>
 
 </manifest>
