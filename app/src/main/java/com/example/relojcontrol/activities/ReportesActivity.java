@@ -105,7 +105,7 @@ public class ReportesActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         btnGenerarPdf.setEnabled(false);
 
-        try {
+
             Map<String, Object> params = obtenerParametrosFiltros();
 
             JsonObjectRequest request = new JsonObjectRequest(
@@ -154,11 +154,7 @@ public class ReportesActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            progressBar.setVisibility(View.GONE);
-            btnGenerarPdf.setEnabled(true);
-            Toast.makeText(this, "Error en parámetros", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
     private Map<String, Object> obtenerParametrosFiltros() {

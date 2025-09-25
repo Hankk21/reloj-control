@@ -120,7 +120,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = etPassword.getText().toString().trim();
 
         isValidForm = !usuario.isEmpty() &&
-                password.length() >= 6 &&
+                password.length() >= 2 &&
                 Patterns.EMAIL_ADDRESS.matcher(usuario).matches();
 
         btnLogin.setEnabled(isValidForm);
@@ -147,7 +147,7 @@ public class LoginActivity extends AppCompatActivity {
         if (password.isEmpty()) {
             tilPassword.setError("La contraseña es requerida");
             isValid = false;
-        } else if (password.length() < 6) {
+        } else if (password.length() < 4) {
             tilPassword.setError("Mínimo 6 caracteres");
             isValid = false;
         } else {

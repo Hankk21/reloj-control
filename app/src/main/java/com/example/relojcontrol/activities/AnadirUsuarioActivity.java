@@ -433,10 +433,9 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
         btnCrearUsuario.setEnabled(false);
         cardSuccess.setVisibility(View.GONE);
 
-        try {
-            // Obtener idRol basado en la selección
-            String rolSeleccionado = spinnerRol.getText().toString();
-            int idRol = getRolId(rolSeleccionado);
+        // Obtener idRol basado en la selección
+        String rolSeleccionado = spinnerRol.getText().toString();
+        int idRol = getRolId(rolSeleccionado);
 
             Map<String, Object> params = new HashMap<>();
             params.put("rut", etRut.getText().toString().trim());
@@ -487,20 +486,16 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            layoutLoading.setVisibility(View.GONE);
-            btnCrearUsuario.setEnabled(true);
-            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
-    // 🎯 **MÉTODO ADAPTADO - ACTUALIZAR USUARIO**
+    // 🎯 **METODO ADAPTADO - ACTUALIZAR USUARIO**
     private void actualizarUsuario() {
         layoutLoading.setVisibility(View.VISIBLE);
         btnCrearUsuario.setEnabled(false);
         cardSuccess.setVisibility(View.GONE);
 
-        try {
+
             // Obtener idRol basado en la selección
             String rolSeleccionado = spinnerRol.getText().toString();
             int idRol = getRolId(rolSeleccionado);
@@ -561,14 +556,10 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
 
             ApiClient.getInstance(this).addToRequestQueue(request);
 
-        } catch (JSONException e) {
-            layoutLoading.setVisibility(View.GONE);
-            btnCrearUsuario.setEnabled(true);
-            Toast.makeText(this, "Error al crear petición", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
-    // 🎯 **MÉTODO PARA OBTENER ID DEL ROL**
+    // 🎯 **METODO PARA OBTENER ID DEL ROL**
     private int getRolId(String rolTexto) {
         for (int i = 0; i < roles.length; i++) {
             if (roles[i].equals(rolTexto)) {
@@ -592,7 +583,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
         if (id == R.id.menu_usuarios) {
             // Ya estamos en usuarios
             return true;
-        } else if (id == R.id.menu_justificadores) {
+        } else if (id == R.id.menu_justificaciones) {
             // Ir a JustificadoresActivity
             // Intent intent = new Intent(this, JustificadoresActivity.class);
             // startActivity(intent);
