@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_marcar_asistencia"
+        android:title="Marcar Asistencia"
+        android:icon="@drawable/ic_access_time"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_notificaciones"
+        android:title="Notificaciones"
+        android:icon="@drawable/ic_notifications"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_mi_perfil"
+        android:title="Mi Perfil"
+        android:icon="@drawable/ic_person"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_mis_justificaciones"
+        android:title="Mis Justificaciones"
+        android:icon="@drawable/ic_assignment"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_ayuda"
+        android:title="Ayuda"
+        android:icon="@drawable/ic_help"
+        app:showAsAction="never" />
+
+</menu>

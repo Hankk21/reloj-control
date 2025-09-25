@@ -3,6 +3,7 @@
     <!-- Colores principales -->
     <color name="primary_color">#1976D2</color>
     <color name="primary_dark">#1565C0</color>
+    <color name="secondary_color">#FF6200EE</color>
     <color name="primary_light">#BBDEFB</color>
 
     <!-- Colores de estado -->
