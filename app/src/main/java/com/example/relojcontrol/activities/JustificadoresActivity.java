@@ -54,9 +54,8 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void initViews() {
         toolbar = findViewById(R.id.toolbar);
-        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView = findViewById(R.id.rv_historial);
         progressBar = findViewById(R.id.progressBar);
-        fabAgregar = findViewById(R.id.fab_agregar);
 
         justificacionesList = new ArrayList<>();
     }

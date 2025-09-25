@@ -1,6 +1,7 @@
 package com.example.relojcontrol.activities;
 
 import android.app.DownloadManager;
+import androidx.core.content.ContextCompat;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -95,14 +96,9 @@ public class ReportesActivity extends AppCompatActivity {
 
         // CORRECCIÓN PARA ANDROID 14+
         IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ (API 33+)
-            registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            // Android 12 y anteriores
-            registerReceiver(downloadReceiver, filter, 0);
-        }
+// Con targetSdk 36, usar siempre ContextCompat
+        ContextCompat.registerReceiver(this, downloadReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     private void generarReportePdf() {

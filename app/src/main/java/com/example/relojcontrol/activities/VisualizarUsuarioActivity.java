@@ -93,8 +93,6 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         btnEliminar = findViewById(R.id.btn_eliminar);
 
         // ESTADÍSTICAS (NUEVOS según XML)
-        cardInfo = findViewById(R.id.card_info);
-        cardEstadisticas = findViewById(R.id.card_estadisticas);
         tvAsistencias = findViewById(R.id.tv_dias_presente); // ← CORREGIDO
         tvAusencias = findViewById(R.id.tv_dias_ausente); // ← CORREGIDO
         tvAtrasos = findViewById(R.id.tv_atrasos); // ← CORREGIDO
@@ -141,10 +139,9 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         tvEstado.setTextColor(colorEstado);
 
         // Color según rol
-        String rol = usuario.getRol();
-        int colorRol = (rol == null && rol.equals("admin")) ?
-                getResources().getColor(R.color.primary_color) :
-                getResources().getColor(R.color.secondary_color);
+        int colorRol = usuario.getRolTexto().equals("admin") ?
+                ContextCompat.getColor(this,R.color.primary_color) :
+                ContextCompat.getColor(this,R.color.secondary_color);
         tvRol.setTextColor(colorRol);
     }
 
