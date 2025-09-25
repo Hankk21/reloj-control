@@ -152,7 +152,7 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
+        getMenuInflater().inflate(R.menu.reportes_menu, menu);
         return true;
     }
 

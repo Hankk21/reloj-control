@@ -1,10 +1,14 @@
 package com.example.relojcontrol.activities;
 
+import android.content.ClipboardManager;
+import androidx.core.content.ContextCompat;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,6 +16,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -35,13 +40,19 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private ProgressBar progressBar;
 
-    // Views de información
+    // Views de información (CORREGIDOS según XML)
     private TextView tvNombre, tvRut, tvCorreo, tvRol, tvEstado;
     private CardView cardInfo, cardEstadisticas;
     private MaterialButton btnEditar, btnResetPassword, btnEliminar;
 
-    // Estadísticas
+    // Estadísticas (NUEVOS IDs según XML)
     private TextView tvAsistencias, tvAusencias, tvAtrasos, tvPorcentajeAsistencia;
+
+    // NUEVOS COMPONENTES DEL XML
+    private RecyclerView rvHistorialAsistencia, rvHistorialJustificaciones;
+    private ImageView ivCopyRut, ivCopyEmail;
+    private TextView tvVerHistorialCompleto, tvVerJustificacionesCompleto;
+    private TextView tvNoHistorial, tvNoJustificaciones;
 
     private Usuario usuario;
 
@@ -62,32 +73,46 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         setupToolbar();
         setupDatosUsuario();
         setupClickListeners();
-        cargarEstadisticas(); // Opcional, si tienes datos
+        cargarEstadisticas();
     }
 
     private void initViews() {
         toolbar = findViewById(R.id.toolbar);
         progressBar = findViewById(R.id.progressBar);
 
-        // Información básica
-        tvNombre = findViewById(R.id.tv_nombre_usuario);
+        // INFORMACIÓN BÁSICA (IDs CORREGIDOS)
+        tvNombre = findViewById(R.id.tv_nombre_completo); // ← CORREGIDO
         tvRut = findViewById(R.id.tv_rut);
         tvCorreo = findViewById(R.id.tv_correo);
-        tvRol = findViewById(R.id.tv_rol);
-        tvEstado = findViewById(R.id.tv_estado);
+        tvRol = findViewById(R.id.tv_rol_badge); // ← NUEVO según XML
+        tvEstado = findViewById(R.id.tv_estado_badge); // ← NUEVO según XML
 
-        // Botones
+        // Botones (IDs CORREGIDOS)
         btnEditar = findViewById(R.id.btn_editar);
-        btnResetPassword = findViewById(R.id.btn_reset_password); //revisar
+        btnResetPassword = findViewById(R.id.btn_resetear_password); // ← CORREGIDO
         btnEliminar = findViewById(R.id.btn_eliminar);
 
-        // Estadísticas
+        // ESTADÍSTICAS (NUEVOS según XML)
         cardInfo = findViewById(R.id.card_info);
         cardEstadisticas = findViewById(R.id.card_estadisticas);
-        tvAsistencias = findViewById(R.id.tv_asistencias);
-        tvAusencias = findViewById(R.id.tv_ausencias);
-        tvAtrasos = findViewById(R.id.tv_atrasos);
-        tvPorcentajeAsistencia = findViewById(R.id.tv_porcentaje_asistencia);
+        tvAsistencias = findViewById(R.id.tv_dias_presente); // ← CORREGIDO
+        tvAusencias = findViewById(R.id.tv_dias_ausente); // ← CORREGIDO
+        tvAtrasos = findViewById(R.id.tv_atrasos); // ← CORREGIDO
+        tvPorcentajeAsistencia = findViewById(R.id.tv_porcentaje_asistencia); // ← CORREGIDO
+
+        // NUEVOS COMPONENTES DEL XML
+        ivCopyRut = findViewById(R.id.iv_copy_rut);
+        ivCopyEmail = findViewById(R.id.iv_copy_email);
+        tvVerHistorialCompleto = findViewById(R.id.tv_ver_historial_completo);
+        tvVerJustificacionesCompleto = findViewById(R.id.tv_ver_justificaciones_completo);
+
+        // RecyclerViews
+        rvHistorialAsistencia = findViewById(R.id.rv_historial_asistencia);
+        rvHistorialJustificaciones = findViewById(R.id.rv_historial_justificaciones);
+
+        // Mensajes de vacío
+        tvNoHistorial = findViewById(R.id.tv_no_historial_asistencia);
+        tvNoJustificaciones = findViewById(R.id.tv_no_justificaciones);
     }
 
     private void setupToolbar() {
@@ -100,25 +125,63 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     }
 
     private void setupDatosUsuario() {
+        // DATOS BÁSICOS
         tvNombre.setText(usuario.getNombreCompleto());
         tvRut.setText(usuario.getRut());
         tvCorreo.setText(usuario.getCorreo());
+
+        // ROL Y ESTADO (actualizar badges)
         tvRol.setText(usuario.getRolTexto());
-        tvEstado.setText(usuario.getEstadoUsuario());
+        tvEstado.setText(usuario.isActivo() ? "Activo" : "Inactivo");
 
         // Color según estado
         int colorEstado = usuario.isActivo() ?
                 getResources().getColor(R.color.success_color) :
                 getResources().getColor(R.color.error_color);
         tvEstado.setTextColor(colorEstado);
+
+        // Color según rol
+        String rol = usuario.getRol();
+        int colorRol = (rol == null && rol.equals("admin")) ?
+                getResources().getColor(R.color.primary_color) :
+                getResources().getColor(R.color.secondary_color);
+        tvRol.setTextColor(colorRol);
     }
 
     private void setupClickListeners() {
+        // BOTONES PRINCIPALES
         btnEditar.setOnClickListener(v -> editarUsuario());
         btnResetPassword.setOnClickListener(v -> resetPassword());
         btnEliminar.setOnClickListener(v -> eliminarUsuario());
+
+        // FUNCIONALIDAD DE COPIAR
+        ivCopyRut.setOnClickListener(v -> copiarAlPortapapeles(usuario.getRut(), "RUT"));
+        ivCopyEmail.setOnClickListener(v -> copiarAlPortapapeles(usuario.getCorreo(), "correo"));
+
+        // NAVEGACIÓN
+        tvVerHistorialCompleto.setOnClickListener(v -> verAsistenciasCompletas());
+        tvVerJustificacionesCompleto.setOnClickListener(v -> verJustificacionesCompletas());
     }
 
+    private void copiarAlPortapapeles(String texto, String tipo) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipData clip = android.content.ClipData.newPlainText(tipo, texto);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(this, tipo + " copiado al portapapeles", Toast.LENGTH_SHORT).show();
+    }
+
+    // MÉTODOS DE NAVEGACIÓN (para implementar después)
+    private void verAsistenciasCompletas() {
+        Toast.makeText(this, "Navegar a historial completo de asistencias", Toast.LENGTH_SHORT).show();
+        // Intent para Activity de historial completo
+    }
+
+    private void verJustificacionesCompletas() {
+        Toast.makeText(this, "Navegar a justificaciones completas", Toast.LENGTH_SHORT).show();
+        // Intent para Activity de justificaciones del usuario
+    }
+
+    // MÉTODOS EXISTENTES (sin cambios)
     private void editarUsuario() {
         Intent intent = new Intent(this, AnadirUsuarioActivity.class);
         intent.putExtra("modo_edicion", true);
@@ -136,7 +199,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST,
-                    ApiEndpoints.USUARIOS_UPDATE, // Usar update para resetear password
+                    ApiEndpoints.USUARIOS_UPDATE,
                     new JSONObject(params),
                     new Response.Listener<JSONObject>() {
                         @Override
@@ -241,11 +304,19 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     }
 
     private void cargarEstadisticas() {
-        // Opcional: Si tienes endpoint para estadísticas del usuario
-        // Por ahora mostrar datos de ejemplo o ocultar la sección
-        cardEstadisticas.setVisibility(View.GONE); // Ocultar si no hay datos
+        // Por ahora ocultar secciones sin datos
+        cardEstadisticas.setVisibility(View.GONE);
+        rvHistorialAsistencia.setVisibility(View.GONE);
+        rvHistorialJustificaciones.setVisibility(View.GONE);
+
+        // Mostrar mensajes de vacío
+        tvNoHistorial.setVisibility(View.VISIBLE);
+        tvNoJustificaciones.setVisibility(View.VISIBLE);
+
+        // TODO: Implementar carga real de estadísticas desde API
     }
 
+    // MENÚ MEJORADO
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.visualizar_usuario_menu, menu);
@@ -256,8 +327,20 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.menu_cambiar_estado) {
+        if (id == R.id.menu_editar) {
+            editarUsuario();
+            return true;
+        } else if (id == R.id.menu_cambiar_estado) {
             cambiarEstadoUsuario();
+            return true;
+        } else if (id == R.id.menu_reset_password) {
+            resetPassword();
+            return true;
+        } else if (id == R.id.menu_ver_asistencias) {
+            verAsistenciasCompletas();
+            return true;
+        } else if (id == R.id.menu_ver_justificaciones) {
+            verJustificacionesCompletas();
             return true;
         }
 

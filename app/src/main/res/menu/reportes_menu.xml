@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_generar_reporte"
+        android:title="Generar Reporte"
+        android:icon="@drawable/ic_add_chart"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_filtrar_fecha"
+        android:title="Filtrar por Fecha"
+        android:icon="@drawable/ic_date_range"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_exportar_pdf"
+        android:title="Exportar PDF"
+        android:icon="@drawable/ic_picture_as_pdf"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_configurar_reporte"
+        android:title="Configurar"
+        android:icon="@drawable/ic_settings"
+        app:showAsAction="never" />
+
+</menu>

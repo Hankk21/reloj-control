@@ -101,7 +101,7 @@ public class ReportesActivity extends AppCompatActivity {
             registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             // Android 12 y anteriores
-            registerReceiver(downloadReceiver, filter);
+            registerReceiver(downloadReceiver, filter, 0);
         }
     }
 

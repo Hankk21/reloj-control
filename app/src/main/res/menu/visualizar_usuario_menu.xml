@@ -3,9 +3,31 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_editar"
+        android:title="Editar"
+        android:icon="@drawable/ic_edit"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/menu_cambiar_estado"
         android:title="Cambiar Estado"
-        android:icon="@drawable/ic_toggle"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_reset_password"
+        android:title="Resetear Password"
+        android:icon="@drawable/ic_key"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_ver_asistencias"
+        android:title="Ver Asistencias"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_ver_justificaciones"
+        android:title="Ver Justificaciones"
+        android:icon="@drawable/ic_assignment"
+        app:showAsAction="never" />
 
 </menu>
