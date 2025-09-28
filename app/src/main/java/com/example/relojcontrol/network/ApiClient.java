@@ -1,45 +1,32 @@
 package com.example.relojcontrol.network;
 
-import android.content.Context;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
-public class ApiClient {
-    private static ApiClient instance;
-    private RequestQueue requestQueue;
-    private static Context ctx;
+public class FirebaseClient {
+    private static FirebaseClient instance;
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
+    private StorageReference mStorage;
 
-    private ApiClient(Context context) {
-        ctx = context.getApplicationContext();
-        requestQueue = getRequestQueue();
+    private FirebaseClient() {
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        mStorage = FirebaseStorage.getInstance().getReference();
     }
 
-    public static synchronized ApiClient getInstance(Context context) {
+    public static synchronized FirebaseClient getInstance() {
         if (instance == null) {
-            instance = new ApiClient(context);
+            instance = new FirebaseClient();
         }
         return instance;
     }
 
-    public RequestQueue getRequestQueue() {
-        if (requestQueue == null) {
-            requestQueue = Volley.newRequestQueue(ctx);
-
-            // Opcional: Configurar timeout global
-            // requestQueue.getCache().initialize();
-        }
-        return requestQueue;
-    }
-
-    public <T> void addToRequestQueue(Request<T> req) {
-        getRequestQueue().add(req);
-    }
-
-    // Metodo opcional para cancelar requests pendientes
-    public void cancelPendingRequests(String tag) {
-        if (requestQueue != null) {
-            requestQueue.cancelAll(tag);
-        }
-    }
+    public FirebaseAuth getAuth() { return mAuth; }
+    public DatabaseReference getDatabase() { return mDatabase; }
+    public StorageReference getStorage() { return mStorage; }
 }
+

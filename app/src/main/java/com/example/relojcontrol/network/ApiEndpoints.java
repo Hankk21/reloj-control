@@ -1,38 +1,83 @@
 package com.example.relojcontrol.network;
 
 public class ApiEndpoints {
-    private static final String BASE_URL = "http://10.0.2.2/asistencia-api/api/";
+    public void loginUser(String email, String password, LoginCallback callback) {
+        FirebaseAuth.getInstance()
+                .signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    String userId = authResult.getUser().getUid();
+                    // Obtener datos del usuario desde Realtime Database
+                    FirebaseDatabase.getInstance()
+                            .getReference("usuarios")
+                            .child(userId)
+                            .get()
+                            .addOnSuccessListener(dataSnapshot -> {
+                                Usuario usuario = dataSnapshot.getValue(Usuario.class);
+                                callback.onSuccess(usuario);
+                            })
+                            .addOnFailureListener(callback::onError);
+                })
+                .addOnFailureListener(callback::onError);
+    }
 
-    /* Auth */
-    public static final String LOGIN = BASE_URL + "auth/login.php";
+    public void crearUsuario(Usuario usuario, String password, CrudCallback callback) {
+        FirebaseAuth.getInstance()
+                .createUserWithEmailAndPassword(usuario.getEmail(), password)
+                .addOnSuccessListener(authResult -> {
+                    String userId = authResult.getUser().getUid();
+                    usuario.setId(userId);
 
-    /* TEST */
-    public static final String SIMPLE_TEST = BASE_URL + "auth/simple_test.php";
+                    FirebaseDatabase.getInstance()
+                            .getReference("usuarios")
+                            .child(userId)
+                            .setValue(usuario)
+                            .addOnSuccessListener(aVoid -> callback.onSuccess())
+                            .addOnFailureListener(callback::onError);
+                })
+                .addOnFailureListener(callback::onError);
+    }
 
-    /* Dashboard */
-    public static final String DASHBOARD_ADMIN = BASE_URL + "dashboard/admin.php";
+    public void obtenerUsuarios(DataCallback<List<Usuario>> callback) {
+        FirebaseDatabase.getInstance()
+                .getReference("usuarios")
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        List<Usuario> usuarios = new ArrayList<>();
+                        for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                            Usuario usuario = userSnapshot.getValue(Usuario.class);
+                            usuarios.add(usuario);
+                        }
+                        callback.onSuccess(usuarios);
+                    }
 
-    /* Usuarios */
-    public static final String USUARIOS_LIST = BASE_URL + "usuarios/list.php";
-    public static final String USUARIOS_CREATE = BASE_URL + "usuarios/create.php";
-    public static final String USUARIOS_UPDATE = BASE_URL + "usuarios/update.php";
-    public static final String USUARIOS_DELETE = BASE_URL + "usuarios/delete.php";
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        callback.onError(error.toException());
+                    }
+                });
+    }
 
-    /* Asistencia */
-    public static final String ASISTENCIA_REGISTRAR = BASE_URL + "asistencia/registrar.php";
-    public static final String ASISTENCIA_HISTORIAL = BASE_URL + "asistencia/historial.php";
-    public static final String ASISTENCIA_HOY = BASE_URL + "asistencia/hoy.php";
+    public void registrarAsistencia(String userId, TipoAsistencia tipo, AsistenciaCallback callback) {
+        Asistencia asistencia = new Asistencia();
+        asistencia.setUsuarioId(userId);
+        asistencia.setTipo(tipo);
+        asistencia.setFechaHora(System.currentTimeMillis());
+        asistencia.setFecha(getCurrentDate());
 
-    /* Justificaciones */
-    public static final String JUSTIFICACIONES_CREATE = BASE_URL + "justificaciones/crear.php";
-    public static final String JUSTIFICACIONES_UPLOAD = BASE_URL + "justificaciones/subir.php";
-    public static final String JUSTIFICACIONES_LIST = BASE_URL + "justificaciones/list.php";
+        String asistenciaId = FirebaseDatabase.getInstance()
+                .getReference("asistencias")
+                .push().getKey();
 
-    /* Licencias */
-    public static final String LICENCIAS_CREATE = BASE_URL + "licencias/crear.php";
-    public static final String LICENCIAS_UPLOAD = BASE_URL + "licencias/subir.php";
-    public static final String LICENCIAS_LIST = BASE_URL + "licencias/list.php";
+        FirebaseDatabase.getInstance()
+                .getReference("asistencias")
+                .child(asistenciaId)
+                .setValue(asistencia)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(asistencia))
+                .addOnFailureListener(callback::onError);
+    }
 
-    /* Reportes */
-    public static final String REPORTES_GENERAR = BASE_URL + "reportes/generar.php";
+
+
+
 }
