@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Ignorar archivo específico de configuración de Android Studio
+.idea/deploymentTargetSelector.xml
+.idea
