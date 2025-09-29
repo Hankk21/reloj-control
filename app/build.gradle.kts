@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.android.application")
     id("com.google.gms.google-services")
 
 }
@@ -15,7 +14,6 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -43,11 +41,12 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
     // Firebase services (reemplaza servidor PHP)
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation ('com.google.firebase:firebase-auth')           // Para login
-    implementation ('com.google.firebase:firebase-database')      // Para datos
-    implementation ('com.google.firebase:firebase-storage')       // Para archivos
+    implementation ("com.google.firebase:firebase-auth")           // Para login
+    implementation ("com.google.firebase:firebase-database")      // Para datos
+    implementation ("com.google.firebase:firebase-storage")       // Para archivos
 
     // Glide (opcional, para cargar imágenes/archivos)
     implementation ("com.github.bumptech.glide:glide:5.0.5")

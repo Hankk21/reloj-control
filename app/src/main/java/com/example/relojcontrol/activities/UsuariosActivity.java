@@ -2,438 +2,409 @@ package com.example.relojcontrol.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import androidx.annotation.NonNull;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
+
+
 import com.example.relojcontrol.R;
 import com.example.relojcontrol.adapters.UsuarioAdapter;
 import com.example.relojcontrol.models.Usuario;
-import com.example.relojcontrol.network.ApiClient;
-import com.example.relojcontrol.network.ApiEndpoints;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.example.relojcontrol.network.FirebaseRepository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class UsuariosActivity extends AppCompatActivity implements UsuarioAdapter.OnUsuarioClickListener {
+public class UsuariosActivity extends AppCompatActivity {
 
+    private static final String TAG = "UsuariosActivity";
+
+    // Views del XML
     private Toolbar toolbar;
+    private TextInputLayout tilBuscar, tilFiltroRol, tilFiltroEstado;
     private TextInputEditText etBuscar;
     private AutoCompleteTextView spinnerRol, spinnerEstado;
-    private MaterialButton btnAnadirUsuario, btnExportar;
+    private MaterialButton btnAñadirUsuario, btnExportar;
     private RecyclerView rvUsuarios;
     private LinearLayout layoutNoUsuarios, layoutPaginacion;
+    private MaterialButton btnPaginaAnterior, btnPaginaSiguiente;
     private TextView tvPaginaActual;
-    private ProgressBar progressBar;
 
+    // Data
+    private FirebaseRepository repository;
     private UsuarioAdapter usuarioAdapter;
-    private List<Usuario> listaUsuarios = new ArrayList<>();
-    private List<Usuario> listaUsuariosFiltrada = new ArrayList<>();
+    private List<Usuario> usuariosList;
+    private List<Usuario> usuariosFilteredList;
 
-    private String filtroTexto = "";
+    // Filtros
     private String filtroRol = "Todos";
     private String filtroEstado = "Todos";
-
-    private Handler searchHandler = new Handler();
-    private Runnable searchRunnable;
-
-    private String[] rolesDisponibles = {"Todos", "Empleado", "Administrador"};
-    private String[] estadosDisponibles = {"Todos", "Activo", "Inactivo"};
+    private String textosBusqueda = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_usuarios);
 
+        Log.d(TAG, "=== UsuariosActivity iniciada ===");
+
+        initFirebase();
         initViews();
         setupToolbar();
         setupRecyclerView();
         setupSpinners();
-        setupSearchListener();
+        setupSearchAndFilters();
         setupClickListeners();
-
-        cargarUsuarios();
+        loadUsuarios();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        cargarUsuarios();
+    private void initFirebase() {
+        repository = FirebaseRepository.getInstance();
+        Log.d(TAG, "Firebase repository inicializado");
     }
 
     private void initViews() {
+        // IDs exactos de tu XML
         toolbar = findViewById(R.id.toolbar);
+        tilBuscar = findViewById(R.id.til_buscar);
+        tilFiltroRol = findViewById(R.id.til_filtro_rol);
+        tilFiltroEstado = findViewById(R.id.til_filtro_estado);
         etBuscar = findViewById(R.id.et_buscar);
         spinnerRol = findViewById(R.id.spinner_rol);
         spinnerEstado = findViewById(R.id.spinner_estado);
-        btnAnadirUsuario = findViewById(R.id.btn_añadir_usuario);
+        btnAñadirUsuario = findViewById(R.id.btn_añadir_usuario);
         btnExportar = findViewById(R.id.btn_exportar);
         rvUsuarios = findViewById(R.id.rv_usuarios);
         layoutNoUsuarios = findViewById(R.id.layout_no_usuarios);
         layoutPaginacion = findViewById(R.id.layout_paginacion);
+        btnPaginaAnterior = findViewById(R.id.btn_pagina_anterior);
+        btnPaginaSiguiente = findViewById(R.id.btn_pagina_siguiente);
         tvPaginaActual = findViewById(R.id.tv_pagina_actual);
-        progressBar = findViewById(R.id.progressBar);
+
+        Log.d(TAG, "Views inicializadas");
     }
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Gestión de Usuarios");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        toolbar.setNavigationOnClickListener(v -> finish());
+
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
     private void setupRecyclerView() {
-        usuarioAdapter = new UsuarioAdapter(listaUsuariosFiltrada, this);
+        usuariosList = new ArrayList<>();
+        usuariosFilteredList = new ArrayList<>();
+
+        usuarioAdapter = new UsuarioAdapter(usuariosFilteredList, new UsuarioAdapter.OnUsuarioClickListener() {
+
+            @Override
+            public void onUsuarioClick(Usuario usuario) {
+                // Acción por defecto al hacer click en el usuario
+                Intent intent = new Intent(UsuariosActivity.this, VisualizarUsuarioActivity.class);
+                intent.putExtra("usuario_id", String.valueOf(usuario.getIdUsuario()));
+                startActivity(intent);
+            }
+            @Override
+            public void onEditClick(Usuario usuario) {
+                // Navegar a editar usuario
+                Intent intent = new Intent(UsuariosActivity.this, AnadirUsuarioActivity.class);
+                intent.putExtra("usuario_id", String.valueOf(usuario.getIdUsuario()));
+                intent.putExtra("modo_edicion", true);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onDeleteClick(Usuario usuario) {
+                confirmarEliminarUsuario(usuario);
+            }
+
+            @Override
+            public void onToggleUsuarioStatus(Usuario usuario) {
+                // Implementar lógica para cambiar el estado del usuario
+            }
+        });
+
         rvUsuarios.setLayoutManager(new LinearLayoutManager(this));
         rvUsuarios.setAdapter(usuarioAdapter);
+
+        Log.d(TAG, "RecyclerView configurado");
     }
 
     private void setupSpinners() {
-        ArrayAdapter<String> rolAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_dropdown_item_1line, rolesDisponibles);
-        spinnerRol.setAdapter(rolAdapter);
+        // Configurar spinner de roles
+        String[] roles = {"Todos", "Administrador", "Empleado"};
+        ArrayAdapter<String> adapterRoles = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, roles);
+        spinnerRol.setAdapter(adapterRoles);
         spinnerRol.setText("Todos", false);
 
-        ArrayAdapter<String> estadoAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_dropdown_item_1line, estadosDisponibles);
-        spinnerEstado.setAdapter(estadoAdapter);
+        // Configurar spinner de estados
+        String[] estados = {"Todos", "Activo", "Inactivo"};
+        ArrayAdapter<String> adapterEstados = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, estados);
+        spinnerEstado.setAdapter(adapterEstados);
         spinnerEstado.setText("Todos", false);
 
-        spinnerRol.setOnItemClickListener((parent, view, position, id) -> {
-            filtroRol = rolesDisponibles[position];
-            aplicarFiltros();
-        });
-
-        spinnerEstado.setOnItemClickListener((parent, view, position, id) -> {
-            filtroEstado = estadosDisponibles[position];
-            aplicarFiltros();
-        });
+        Log.d(TAG, "Spinners configurados");
     }
 
-    private void setupSearchListener() {
+    private void setupSearchAndFilters() {
+        // Configurar búsqueda en tiempo real
         etBuscar.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void afterTextChanged(Editable s) {
-                filtroTexto = s.toString().trim();
-
-                if (searchRunnable != null) {
-                    searchHandler.removeCallbacks(searchRunnable);
-                }
-
-                searchRunnable = () -> aplicarFiltros();
-                searchHandler.postDelayed(searchRunnable, 500);
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                textosBusqueda = s.toString().trim();
+                aplicarFiltros();
             }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
+
+        // Configurar filtro por rol
+        spinnerRol.setOnItemClickListener((parent, view, position, id) -> {
+            filtroRol = (String) parent.getItemAtPosition(position);
+            aplicarFiltros();
+        });
+
+        // Configurar filtro por estado
+        spinnerEstado.setOnItemClickListener((parent, view, position, id) -> {
+            filtroEstado = (String) parent.getItemAtPosition(position);
+            aplicarFiltros();
+        });
+
+        Log.d(TAG, "Búsqueda y filtros configurados");
     }
 
     private void setupClickListeners() {
-        btnAnadirUsuario.setOnClickListener(v -> {
-            startActivity(new Intent(this, AnadirUsuarioActivity.class));
+        btnAñadirUsuario.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AnadirUsuarioActivity.class);
+            intent.putExtra("modo_edicion", false);
+            startActivity(intent);
         });
 
         btnExportar.setOnClickListener(v -> {
-            Toast.makeText(this, "Exportar funcionalidad en desarrollo", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Funcionalidad de exportar en desarrollo", Toast.LENGTH_SHORT).show();
+        });
+
+        btnPaginaAnterior.setOnClickListener(v -> {
+            // Implementar paginación anterior
+            Toast.makeText(this, "Página anterior", Toast.LENGTH_SHORT).show();
+        });
+
+        btnPaginaSiguiente.setOnClickListener(v -> {
+            // Implementar paginación siguiente
+            Toast.makeText(this, "Página siguiente", Toast.LENGTH_SHORT).show();
+        });
+
+        Log.d(TAG, "Click listeners configurados");
+    }
+
+    private void loadUsuarios() {
+        Log.d(TAG, "Cargando usuarios desde Firebase");
+
+        repository.obtenerUsuarios(new FirebaseRepository.DataCallback<List<Usuario>>() {
+            @Override
+            public void onSuccess(List<Usuario> usuarios) {
+                Log.d(TAG, "✓ Usuarios cargados: " + usuarios.size());
+
+                usuariosList.clear();
+                usuariosList.addAll(usuarios);
+
+                aplicarFiltros();
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Log.e(TAG, "✗ Error cargando usuarios", error);
+                Toast.makeText(UsuariosActivity.this,
+                        "Error cargando usuarios: " + error.getMessage(),
+                        Toast.LENGTH_LONG).show();
+
+                mostrarEstadoSinUsuarios();
+            }
         });
     }
 
-    private void cargarUsuarios() {
-        progressBar.setVisibility(View.VISIBLE);
-
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.GET,
-                ApiEndpoints.USUARIOS_LIST,
-                null,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        progressBar.setVisibility(View.GONE);
-                        try {
-                            if (response.getBoolean("success")) {
-                                JSONArray usuariosArray = response.getJSONObject("data").getJSONArray("usuarios");
-                                listaUsuarios = parseUsuariosFromJson(usuariosArray);
-                                aplicarFiltros();
-                            } else {
-                                mostrarError("Error al cargar usuarios");
-                            }
-                        } catch (JSONException e) {
-                            mostrarError("Error en formato de respuesta");
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        progressBar.setVisibility(View.GONE);
-                        mostrarError("Error de conexión: " + error.getMessage());
-                    }
-                }
-        );
-
-        ApiClient.getInstance(this).addToRequestQueue(request);
-    }
-
-    private List<Usuario> parseUsuariosFromJson(JSONArray usuariosArray) throws JSONException {
-        List<Usuario> usuarios = new ArrayList<>();
-        for (int i = 0; i < usuariosArray.length(); i++) {
-            JSONObject usuarioJson = usuariosArray.getJSONObject(i);
-            Usuario usuario = new Usuario();
-            usuario.setIdUsuario(usuarioJson.getInt("id_usuario"));
-            usuario.setRut(usuarioJson.getString("rut"));
-            usuario.setNombre(usuarioJson.getString("nombre"));
-            usuario.setApellido(usuarioJson.getString("apellido"));
-            usuario.setCorreo(usuarioJson.getString("correo"));
-            usuario.setEstadoUsuario(usuarioJson.getString("estado_usuario"));
-            usuario.setIdRol(usuarioJson.getInt("id_rol"));
-            usuarios.add(usuario);
-        }
-        return usuarios;
-    }
-
     private void aplicarFiltros() {
-        listaUsuariosFiltrada.clear();
+        usuariosFilteredList.clear();
 
-        for (Usuario usuario : listaUsuarios) {
+        for (Usuario usuario : usuariosList) {
             boolean cumpleFiltros = true;
 
-            // Filtro de texto
-            if (!filtroTexto.isEmpty()) {
-                String textoBusqueda = (usuario.getNombre() + " " + usuario.getApellido() + " " +
+            // Filtro por texto de búsqueda (mantener igual)
+            if (!textosBusqueda.isEmpty()) {
+                String textoCompleto = (usuario.getNombre() + " " + usuario.getApellido() + " " +
                         usuario.getRut() + " " + usuario.getCorreo()).toLowerCase();
-                if (!textoBusqueda.contains(filtroTexto.toLowerCase())) {
+                if (!textoCompleto.contains(textosBusqueda.toLowerCase())) {
                     cumpleFiltros = false;
                 }
             }
 
-            // Filtro de rol
-            if (!"Todos".equals(filtroRol)) {
-                String rolUsuario = usuario.getRolTexto();
-                if (!filtroRol.equals(rolUsuario)) {
+            // Filtro por rol
+            if (!filtroRol.equals("Todos")) {
+                if (filtroRol.equals("Administrador") && usuario.getIdRol() != 1) {
+                    cumpleFiltros = false;
+                } else if (filtroRol.equals("Empleado") && usuario.getIdRol() != 2) {
                     cumpleFiltros = false;
                 }
             }
 
-            // Filtro de estado
-            if (!"Todos".equals(filtroEstado)) {
-                String estadoUsuario = usuario.isActivo() ? "Activo" : "Inactivo";
-                if (!filtroEstado.equals(estadoUsuario)) {
+            // Filtro por estado
+            if (!filtroEstado.equals("Todos")) {
+                String estadoUsuario = usuario.getEstadoUsuario();
+                if (filtroEstado.equals("Activo") && !"activo".equals(estadoUsuario.toLowerCase())) {
+                    cumpleFiltros = false;
+                } else if (filtroEstado.equals("Inactivo") && !"inactivo".equals(estadoUsuario.toLowerCase())) {
                     cumpleFiltros = false;
                 }
             }
 
             if (cumpleFiltros) {
-                listaUsuariosFiltrada.add(usuario);
+                usuariosFilteredList.add(usuario);
             }
         }
 
-        actualizarVistaUsuarios();
+        actualizarVista();
+        Log.d(TAG, "Filtros aplicados - Usuarios mostrados: " + usuariosFilteredList.size());
     }
 
-    private void actualizarVistaUsuarios() {
-        if (listaUsuariosFiltrada.isEmpty()) {
-            layoutNoUsuarios.setVisibility(View.VISIBLE);
-            rvUsuarios.setVisibility(View.GONE);
-            layoutPaginacion.setVisibility(View.GONE);
-        } else {
-            layoutNoUsuarios.setVisibility(View.GONE);
-            rvUsuarios.setVisibility(View.VISIBLE);
-            layoutPaginacion.setVisibility(View.GONE);
 
-            usuarioAdapter.updateData(listaUsuariosFiltrada);
+    private void actualizarVista() {
+        if (usuariosFilteredList.isEmpty()) {
+            mostrarEstadoSinUsuarios();
+        } else {
+            mostrarListaUsuarios();
+        }
+
+        usuarioAdapter.notifyDataSetChanged();
+    }
+
+    private void mostrarEstadoSinUsuarios() {
+        rvUsuarios.setVisibility(View.GONE);
+        layoutNoUsuarios.setVisibility(View.VISIBLE);
+        layoutPaginacion.setVisibility(View.GONE);
+    }
+
+    private void mostrarListaUsuarios() {
+        rvUsuarios.setVisibility(View.VISIBLE);
+        layoutNoUsuarios.setVisibility(View.GONE);
+
+        // Mostrar paginación si hay más de 10 usuarios (ejemplo)
+        if (usuariosFilteredList.size() > 10) {
+            layoutPaginacion.setVisibility(View.VISIBLE);
+            tvPaginaActual.setText("Página 1 de " + ((usuariosFilteredList.size() / 10) + 1));
+        } else {
+            layoutPaginacion.setVisibility(View.GONE);
         }
     }
 
-    private void mostrarError(String mensaje) {
-        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
-        layoutNoUsuarios.setVisibility(View.VISIBLE);
-        rvUsuarios.setVisibility(View.GONE);
-    }
-
-    // Implementación de UsuarioAdapter.OnUsuarioClickListener
-    @Override
-    public void onUsuarioClick(Usuario usuario) {
-        Intent intent = new Intent(this, VisualizarUsuarioActivity.class);
-        intent.putExtra("usuario", usuario); // AHORA FUNCIONA
-        startActivity(intent);
-    }
-
-    @Override
-    public void onEditUsuario(Usuario usuario) {
-        Intent intent = new Intent(this, AnadirUsuarioActivity.class);
-        intent.putExtra("modo_edicion", true);
-        intent.putExtra("usuario", usuario); // AHORA FUNCIONA
-        startActivity(intent);
-    }
-
-    @Override
-    public void onDeleteUsuario(Usuario usuario) {
+    private void confirmarEliminarUsuario(Usuario usuario) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Eliminar Usuario")
-                .setMessage("¿Está seguro de que desea eliminar a " + usuario.getNombreCompleto() + "?")
-                .setPositiveButton("Eliminar", (dialog, which) -> eliminarUsuario(usuario))
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
-    @Override
-    public void onToggleUsuarioStatus(Usuario usuario) {
-        String nuevoEstado = usuario.isActivo() ? "Inactivo" : "Activo";
-        String mensaje = "¿Cambiar estado a " + nuevoEstado.toLowerCase() + " para " +
-                usuario.getNombreCompleto() + "?";
-
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Cambiar Estado")
-                .setMessage(mensaje)
-                .setPositiveButton("Confirmar", (dialog, which) -> cambiarEstadoUsuario(usuario))
+                .setMessage("¿Estás seguro de que quieres eliminar a " + usuario.getNombre() + " " + usuario.getApellido() + "?")
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    eliminarUsuario(usuario);
+                })
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
     private void eliminarUsuario(Usuario usuario) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("id_usuario", usuario.getIdUsuario());
+        Log.d(TAG, "Eliminando usuario: " + usuario.getIdUsuario());
 
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.POST,
-                ApiEndpoints.USUARIOS_DELETE,
-                new JSONObject(params),
-                new Response.Listener<JSONObject>() {
+        // Buscar Firebase UID por ID numérico
+        buscarFirebaseUidPorId(usuario.getIdUsuario(), firebaseUid -> {
+            if (firebaseUid != null) {
+                // Ahora sí eliminar con el UID correcto
+                repository.eliminarUsuario(firebaseUid, new FirebaseRepository.CrudCallback() {
                     @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            if (response.getBoolean("success")) {
-                                Toast.makeText(UsuariosActivity.this,
-                                        "Usuario eliminado correctamente", Toast.LENGTH_SHORT).show();
-                                cargarUsuarios();
-                            } else {
-                                Toast.makeText(UsuariosActivity.this,
-                                        response.getString("message"), Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (JSONException e) {
-                            Toast.makeText(UsuariosActivity.this,
-                                    "Error al procesar respuesta", Toast.LENGTH_SHORT).show();
+                    public void onSuccess() {
+                        Log.d(TAG, "✓ Usuario eliminado exitosamente");
+                        Toast.makeText(UsuariosActivity.this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
+
+                        // Recargar lista
+                        loadUsuarios();
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        Log.e(TAG, "✗ Error eliminando usuario", error);
+                        Toast.makeText(UsuariosActivity.this,
+                                "Error eliminando usuario: " + error.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            } else {
+                // Caso cuando no se encuentra el Firebase UID
+                Log.e(TAG, "No se pudo encontrar Firebase UID para usuario ID: " + usuario.getIdUsuario());
+                Toast.makeText(UsuariosActivity.this,
+                        "Error: No se pudo localizar el usuario en el sistema",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void buscarFirebaseUidPorId(int userId, UidCallback callback) {
+        Log.d(TAG, "Buscando Firebase UID para usuario ID: " + userId);
+
+        repository.mDatabase.child("userMappings").child(String.valueOf(userId))
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.exists()) {
+                            String firebaseUid = dataSnapshot.getValue(String.class);
+                            Log.d(TAG, "✓ Firebase UID encontrado: " + firebaseUid);
+                            callback.onUid(firebaseUid);
+                        } else {
+                            Log.w(TAG, "✗ No se encontró mapping para usuario ID: " + userId);
+                            callback.onUid(null);
                         }
                     }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(UsuariosActivity.this,
-                                "Error de conexión", Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
 
-        ApiClient.getInstance(this).addToRequestQueue(request);
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error buscando Firebase UID", error.toException());
+                        callback.onUid(null);
+                    }
+                });
     }
 
-    private void cambiarEstadoUsuario(Usuario usuario) {
-        Map<String, Object> params = new HashMap<>();
-        params.put("id_usuario", usuario.getIdUsuario());
-        params.put("estado_usuario", usuario.isActivo() ? "inactivo" : "activo");
-
-        // Usar USUARIOS_UPDATE para cambiar estado
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.POST,
-                ApiEndpoints.USUARIOS_UPDATE,
-                new JSONObject(params),
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            if (response.getBoolean("success")) {
-                                String estado = usuario.isActivo() ? "desactivado" : "activado";
-                                Toast.makeText(UsuariosActivity.this,
-                                        "Usuario " + estado + " correctamente", Toast.LENGTH_SHORT).show();
-                                cargarUsuarios();
-                            } else {
-                                Toast.makeText(UsuariosActivity.this,
-                                        response.getString("message"), Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (JSONException e) {
-                            Toast.makeText(UsuariosActivity.this,
-                                    "Error al procesar respuesta", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(UsuariosActivity.this,
-                                "Error de conexión", Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
-
-        ApiClient.getInstance(this).addToRequestQueue(request);
+    // Interfaz para devolver el Firebase UID
+    private interface UidCallback {
+        void onUid(String firebaseUid);
     }
+
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.usuarios_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-
-        if (itemId == R.id.action_refresh) {
-            cargarUsuarios();
-            return true;
-        } else if (itemId == R.id.action_clear_filters) { // AHORA EXISTE
-            limpiarFiltros();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void limpiarFiltros() {
-        etBuscar.setText("");
-        spinnerRol.setText("Todos", false);
-        spinnerEstado.setText("Todos", false);
-        filtroTexto = "";
-        filtroRol = "Todos";
-        filtroEstado = "Todos";
-        aplicarFiltros();
-        Toast.makeText(this, "Filtros limpiados", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (searchHandler != null && searchRunnable != null) {
-            searchHandler.removeCallbacks(searchRunnable);
-        }
+    protected void onResume() {
+        super.onResume();
+        loadUsuarios(); // Recargar datos cuando vuelva a la activity
     }
 }
