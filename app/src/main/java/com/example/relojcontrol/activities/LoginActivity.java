@@ -13,8 +13,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 // Firebase imports
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -63,7 +67,14 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        Log.d(TAG, "=== LoginActivity iniciada con Firebase ===");
+        // INICIALIZAR FIREBASE AQUÍ
+        try {
+            FirebaseApp.initializeApp(this);
+            Log.d("Firebase", "✓ Firebase inicializado correctamente");
+        } catch (Exception e) {
+            Log.e("Firebase", "✗ Error inicializando Firebase", e);
+            Toast.makeText(this, "Error de configuración Firebase", Toast.LENGTH_LONG).show();
+        }
 
         // Inicializar Firebase
         initFirebase();
@@ -88,6 +99,10 @@ public class LoginActivity extends AppCompatActivity {
     private void testFirebaseConnection() {
         Log.d(TAG, "=== TESTING FIREBASE CONNECTION ===");
 
+        // VERIFICAR AUTENTICACIÓN PRIMERO
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        Log.d(TAG, "Usuario actual: " + (currentUser != null ? currentUser.getUid() : "No autenticado"));
+
         mDatabase.child("test").setValue("Firebase conectado: " + System.currentTimeMillis())
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "✓ FIREBASE: Conexión exitosa");
@@ -95,7 +110,33 @@ public class LoginActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "✗ FIREBASE: Error de conexión", e);
-                    Toast.makeText(this, "Error Firebase ✗", Toast.LENGTH_SHORT).show();
+                    // MOSTRAR ERROR DETALLADO:
+                    String errorDetail = e.getClass().getSimpleName() + ": " + e.getMessage();
+                    Toast.makeText(this, "Error Firebase: " + errorDetail, Toast.LENGTH_LONG).show();
+                });
+
+        // VERIFICAR CONEXIÓN A INTERNET
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+
+        if (!isConnected) {
+            Log.e(TAG, "✗ No hay conexión a internet");
+            Toast.makeText(this, "No hay conexión a internet", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // VERIFICAR ESTADO DE FIREBASE
+        FirebaseDatabase.getInstance().goOnline(); // Forzar conexión
+
+        mDatabase.child("test").setValue("Firebase conectado: " + System.currentTimeMillis())
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "✓ FIREBASE: Conexión exitosa");
+                    Toast.makeText(this, "Firebase conectado ✓", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "✗ FIREBASE: Error de conexión", e);
+                    Toast.makeText(this, "Error Firebase: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 

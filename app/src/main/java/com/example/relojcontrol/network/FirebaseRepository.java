@@ -340,7 +340,7 @@ public class FirebaseRepository {
         });
     }
 
-    // MÉTODO ÚNICO - NO DUPLICADO
+
     private void crearIndicesAsistencia(Asistencia asistencia) {
         int userId = asistencia.getIdUsuario();
         int asistenciaId = asistencia.getIdAsistencia();

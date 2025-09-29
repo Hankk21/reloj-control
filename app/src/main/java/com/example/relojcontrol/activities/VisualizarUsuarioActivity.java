@@ -439,7 +439,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private void editarUsuario() {
         Log.d(TAG, "Navegando a editar usuario: " + usuarioId);
 
-        Intent intent = new Intent(this, AñadirUsuarioActivity.class);
+        Intent intent = new Intent(this, AnadirUsuarioActivity.class);
         intent.putExtra("usuario_id", usuarioId);
         intent.putExtra("modo_edicion", true);
         startActivity(intent);
