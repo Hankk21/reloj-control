@@ -67,7 +67,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // INICIALIZAR FIREBASE AQUÍ
+        // INICIALIZAR FIREBASE
         try {
             FirebaseApp.initializeApp(this);
             Log.d("Firebase", "✓ Firebase inicializado correctamente");
@@ -141,7 +141,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        // IDs exactos de tu XML
+        // IDs exactos de XML
         ivLogo = findViewById(R.id.iv_logo);
         tilUsuario = findViewById(R.id.til_usuario);
         tilPassword = findViewById(R.id.til_password);
