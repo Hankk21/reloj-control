@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.relojcontrol" />
+                  <option name="mobileSdkAppId" value="1:743114637181:android:b786638971c04be6fe5614" />
+                  <option name="projectId" value="relojcontrol-63118175" />
+                  <option name="projectNumber" value="743114637181" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

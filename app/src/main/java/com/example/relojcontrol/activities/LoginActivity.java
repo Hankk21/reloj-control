@@ -12,38 +12,29 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.NetworkError;
-import com.android.volley.NoConnectionError;
-import com.android.volley.ParseError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.ServerError;
-import com.android.volley.TimeoutError;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
+// Firebase imports
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import androidx.annotation.NonNull;
+
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import com.example.relojcontrol.R;
-import com.example.relojcontrol.network.ApiClient;
-import com.example.relojcontrol.network.ApiEndpoints;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
+import com.example.relojcontrol.models.Usuario;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String TAG = "LoginActivity"; // Para logs
+    private static final String TAG = "LoginActivity";
 
     // Constants
     private static final String PREFS_NAME = "RelojControl";
@@ -53,7 +44,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final String KEY_USER_EMAIL = "user_email";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
 
-    // Views
+    // Views - Coherentes con tu XML
     private ImageView ivLogo;
     private TextInputLayout tilUsuario, tilPassword;
     private TextInputEditText etUsuario, etPassword;
@@ -61,7 +52,9 @@ public class LoginActivity extends AppCompatActivity {
     private MaterialButton btnLogin;
     private ProgressBar progressBar;
 
-    // Variables
+    // Firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
     private SharedPreferences sharedPreferences;
     private boolean isValidForm = false;
 
@@ -70,8 +63,10 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        Log.d(TAG, "=== LoginActivity iniciada ===");
+        Log.d(TAG, "=== LoginActivity iniciada con Firebase ===");
 
+        // Inicializar Firebase
+        initFirebase();
         initViews();
         initSharedPreferences();
         setupValidation();
@@ -80,104 +75,32 @@ public class LoginActivity extends AppCompatActivity {
         // Verificar si ya está logueado
         checkExistingSession();
 
-        // TEST: Probar conectividad al crear la actividad
-        testEmulatorConnectivity();
-        testConnectivity();
+        // TEST: Probar conexión Firebase
+        testFirebaseConnection();
     }
 
-    // METODO NUEVO: Probar conectividad del emulador
-    private void testEmulatorConnectivity() {
-        Log.d(TAG, "=== TESTING EMULATOR CONNECTIVITY ===");
-
-        // Test 1: Conexión a internet general
-        String internetTestUrl = "http://www.google.com";
-
-        // Test 2: Conexión a tu servidor local
-        String localTestUrl = "http://10.0.2.2/asistencia-api/api/auth/simple_test.php";
-
-        StringRequest internetTest = new StringRequest(
-                Request.Method.GET,
-                internetTestUrl,
-                response -> Log.d(TAG, "✓ INTERNET: Conectado a internet"),
-                error -> Log.e(TAG, "✗ INTERNET: No hay conexión a internet")
-        );
-
-        StringRequest localTest = new StringRequest(
-                Request.Method.GET,
-                localTestUrl,
-                response -> Log.d(TAG, "✓ LOCAL: Conectado al servidor local"),
-                error -> Log.e(TAG, "✗ LOCAL: No se puede acceder al servidor local")
-        );
-
-        ApiClient.getInstance(this).addToRequestQueue(internetTest);
-        ApiClient.getInstance(this).addToRequestQueue(localTest);
+    private void initFirebase() {
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        Log.d(TAG, "Firebase inicializado correctamente");
     }
 
-    // METODO MEJORADO: Probar conectividad con la API
-    private void testConnectivity() {
-        Log.d(TAG, "=== PROBANDO CONECTIVIDAD CON API ===");
-        Log.d(TAG, "URL de LOGIN: " + ApiEndpoints.LOGIN);
-        Log.d(TAG, "URL de TEST: " + ApiEndpoints.SIMPLE_TEST);
+    private void testFirebaseConnection() {
+        Log.d(TAG, "=== TESTING FIREBASE CONNECTION ===");
 
-        // Usa la constante corregida
-        JsonObjectRequest testRequest = new JsonObjectRequest(
-                Request.Method.GET,
-                ApiEndpoints.SIMPLE_TEST, // ¡Usa la constante directa!
-                null,
-                response -> {
-                    Log.d(TAG, "✓ API CONECTADA: " + response.toString());
-                    Toast.makeText(this, "Servidor conectado ✓", Toast.LENGTH_SHORT).show();
-                },
-                error -> {
-                    Log.e(TAG, "✗ ERROR DE CONEXIÓN A LA API");
-                    analyzeConnectionError(error);
-                    Toast.makeText(this, "Error de conexión ✗", Toast.LENGTH_LONG).show();
-                }
-        );
-
-        ApiClient.getInstance(this).addToRequestQueue(testRequest);
-    }
-
-    // METODO NUEVO: Análisis detallado de errores de conexión
-    private void analyzeConnectionError(VolleyError error) {
-        Log.e(TAG, "=== ANÁLISIS DETALLADO DE ERROR ===");
-
-        if (error instanceof TimeoutError) {
-            Log.e(TAG, "Timeout - El servidor no responde en el tiempo esperado");
-        } else if (error instanceof NoConnectionError) {
-            Log.e(TAG, "No hay conexión de red disponible");
-        } else if (error instanceof AuthFailureError) {
-            Log.e(TAG, "Error de autenticación en el servidor");
-        } else if (error instanceof ServerError) {
-            Log.e(TAG, "Error interno del servidor (500)");
-        } else if (error instanceof NetworkError) {
-            Log.e(TAG, "Error general de red");
-        } else if (error instanceof ParseError) {
-            Log.e(TAG, "Error parseando la respuesta del servidor");
-        } else {
-            Log.e(TAG, "Error desconocido: " + error.getClass().getSimpleName());
-        }
-
-        if (error.networkResponse != null) {
-            Log.e(TAG, "Status Code: " + error.networkResponse.statusCode);
-            Log.e(TAG, "Headers: " + error.networkResponse.headers);
-            try {
-                String responseBody = new String(error.networkResponse.data, "utf-8");
-                Log.e(TAG, "Response Body: " + responseBody);
-            } catch (UnsupportedEncodingException e) {
-                Log.e(TAG, "Error leyendo response body", e);
-            }
-        } else {
-            Log.e(TAG, "No hay networkResponse - Error de conexión");
-            if (error.getCause() != null) {
-                Log.e(TAG, "Causa del error: " + error.getCause().toString());
-            }
-        }
-
-        Log.e(TAG, "Mensaje de error: " + error.getMessage());
+        mDatabase.child("test").setValue("Firebase conectado: " + System.currentTimeMillis())
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "✓ FIREBASE: Conexión exitosa");
+                    Toast.makeText(this, "Firebase conectado ✓", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "✗ FIREBASE: Error de conexión", e);
+                    Toast.makeText(this, "Error Firebase ✗", Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void initViews() {
+        // IDs exactos de tu XML
         ivLogo = findViewById(R.id.iv_logo);
         tilUsuario = findViewById(R.id.til_usuario);
         tilPassword = findViewById(R.id.til_password);
@@ -218,7 +141,7 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> {
             Log.d(TAG, "Botón login presionado");
             if (validateAllFields()) {
-                performLogin();
+                performFirebaseLogin();
             } else {
                 Log.w(TAG, "Validación de campos falló");
             }
@@ -233,8 +156,9 @@ public class LoginActivity extends AppCompatActivity {
         String usuario = etUsuario.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
+        // Validación solo de email
         isValidForm = !usuario.isEmpty() &&
-                password.length() >= 2 &&
+                password.length() >= 6 && // Firebase requiere mínimo 6 caracteres
                 Patterns.EMAIL_ADDRESS.matcher(usuario).matches();
 
         btnLogin.setEnabled(isValidForm);
@@ -248,7 +172,7 @@ public class LoginActivity extends AppCompatActivity {
 
         Log.d(TAG, "Validando campos - Usuario: " + usuario + ", Password length: " + password.length());
 
-        // Validar usuario (solo email según tu API)
+        // Validar usuario (solo email)
         if (usuario.isEmpty()) {
             tilUsuario.setError("El correo es requerido");
             isValid = false;
@@ -259,12 +183,12 @@ public class LoginActivity extends AppCompatActivity {
             tilUsuario.setError(null);
         }
 
-        // Validar contraseña
+        // Validar contraseña (Firebase requiere mínimo 6 caracteres)
         if (password.isEmpty()) {
             tilPassword.setError("La contraseña es requerida");
             isValid = false;
-        } else if (password.length() < 4) {
-            tilPassword.setError("Mínimo 4 caracteres");
+        } else if (password.length() < 6) {
+            tilPassword.setError("Mínimo 6 caracteres");
             isValid = false;
         } else {
             tilPassword.setError(null);
@@ -274,142 +198,129 @@ public class LoginActivity extends AppCompatActivity {
         return isValid;
     }
 
-    private void performLogin() {
-        Log.d(TAG, "=== INICIANDO PROCESO DE LOGIN ===");
+    private void performFirebaseLogin() {
+        Log.d(TAG, "=== INICIANDO LOGIN CON FIREBASE ===");
 
         showLoading(true);
         hideErrorMessage();
 
-        String correo = etUsuario.getText().toString().trim();
-        String contrasena = etPassword.getText().toString().trim();
+        String email = etUsuario.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
 
-        Log.d(TAG, "Credenciales - Email: " + correo + ", Password: [OCULTA]");
-        Log.d(TAG, "URL destino: " + ApiEndpoints.LOGIN);
+        Log.d(TAG, "Intentando login con email: " + email);
 
-        // Crear parametros segun tu API PHP
-        Map<String, String> params = new HashMap<>();
-        params.put("correo", correo);
-        params.put("contrasena", contrasena);
+        // Autenticación con Firebase Auth
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    Log.d(TAG, "✓ Autenticación Firebase exitosa");
+                    FirebaseUser firebaseUser = authResult.getUser();
 
-        Log.d(TAG, "Parámetros preparados: " + params.keySet());
+                    if (firebaseUser != null) {
+                        String userId = firebaseUser.getUid();
+                        Log.d(TAG, "User ID: " + userId);
 
-        try {
-            JSONObject jsonParams = new JSONObject(params);
-            Log.d(TAG, "JSON a enviar: " + jsonParams.toString());
+                        // Obtener datos del usuario desde Realtime Database
+                        getUserDataFromDatabase(userId);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "✗ Error en autenticación Firebase", e);
+                    showLoading(false);
 
-            JsonObjectRequest request = new JsonObjectRequest(
-                    Request.Method.POST,
-                    ApiEndpoints.LOGIN,
-                    jsonParams,
-                    new Response.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            Log.d(TAG, "=== RESPUESTA RECIBIDA ===");
-                            Log.d(TAG, "Response completa: " + response.toString());
+                    String errorMessage = "Error de autenticación";
 
-                            showLoading(false);
-                            try {
-                                // Estructura según tu API PHP corregida
-                                if (response.getBoolean("success")) {
-                                    Log.d(TAG, "✓ Login exitoso según respuesta");
-                                    // Login exitoso
-                                    JSONObject userData = response.getJSONObject("data").getJSONObject("usuario");
-                                    Log.d(TAG, "Datos usuario: " + userData.toString());
-                                    handleLoginSuccess(userData);
-                                } else {
-                                    Log.w(TAG, "✗ Login falló según respuesta");
-                                    // Error de credenciales
-                                    String errorMessage = response.getString("message");
-                                    Log.w(TAG, "Mensaje de error: " + errorMessage);
-                                    showErrorMessage(errorMessage != null ? errorMessage : "Credenciales incorrectas");
-                                }
-                            } catch (JSONException e) {
-                                Log.e(TAG, "Error parseando JSON de respuesta", e);
-                                e.printStackTrace();
-                                showErrorMessage("Error al procesar la respuesta del servidor");
-                            }
-                        }
-                    },
-                    new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.e(TAG, "=== ERROR EN PETICIÓN DE LOGIN ===");
-                            analyzeConnectionError(error); // Usar el metodo mejorado
-
-                            showLoading(false);
-                            String errorMessage = "Error de conexión";
-
-                            // Manejo específico de errores
-                            if (error instanceof NoConnectionError || error instanceof TimeoutError) {
-                                errorMessage = "Verifica tu conexión a internet";
-                            } else if (error.networkResponse != null) {
-                                switch (error.networkResponse.statusCode) {
-                                    case 401:
-                                        errorMessage = "Credenciales incorrectas";
-                                        break;
-                                    case 500:
-                                        errorMessage = "Error interno del servidor";
-                                        break;
-                                    case 404:
-                                        errorMessage = "Servicio no encontrado";
-                                        break;
-                                    default:
-                                        errorMessage = "Error: " + error.networkResponse.statusCode;
-                                }
-                            }
-
-                            Log.e(TAG, "Mensaje final de error: " + errorMessage);
-                            showErrorMessage(errorMessage);
+                    // Manejo específico de errores Firebase
+                    String errorCode = e.getMessage();
+                    if (errorCode != null) {
+                        if (errorCode.contains("password is invalid")) {
+                            errorMessage = "Contraseña incorrecta";
+                        } else if (errorCode.contains("no user record")) {
+                            errorMessage = "Usuario no encontrado";
+                        } else if (errorCode.contains("network error")) {
+                            errorMessage = "Error de conexión";
+                        } else if (errorCode.contains("too-many-requests")) {
+                            errorMessage = "Demasiados intentos. Intenta más tarde";
                         }
                     }
-            ) {
-                @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("Content-Type", "application/json");
-                    headers.put("Accept", "application/json");
-                    return headers;
-                }
-            };
 
-            Log.d(TAG, "Request creado, agregando a cola...");
-            // Agregar a la cola de Volley
-            ApiClient.getInstance(this).addToRequestQueue(request);
-            Log.d(TAG, "Request agregado a cola de Volley");
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error creando request", e);
-            showLoading(false);
-            showErrorMessage("Error preparando la petición");
-        }
+                    Log.e(TAG, "Mensaje de error: " + errorMessage);
+                    showErrorMessage(errorMessage);
+                });
     }
 
-    private void handleLoginSuccess(JSONObject userData) throws JSONException {
+    private void getUserDataFromDatabase(String userId) {
+        Log.d(TAG, "Obteniendo datos del usuario desde database: " + userId);
+
+        mDatabase.child("usuarios").child(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        Log.d(TAG, "✓ Datos del usuario obtenidos");
+                        showLoading(false);
+
+                        if (dataSnapshot.exists()) {
+                            try {
+                                Usuario usuario = dataSnapshot.getValue(Usuario.class);
+                                if (usuario != null) {
+                                    Log.d(TAG, "Usuario: " + usuario.getNombre());
+                                    handleLoginSuccess(usuario, userId);
+                                } else {
+                                    Log.e(TAG, "Error: usuario es null");
+                                    showErrorMessage("Error obteniendo datos del usuario");
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parseando datos del usuario", e);
+                                showErrorMessage("Error procesando datos del usuario");
+                            }
+                        } else {
+                            Log.w(TAG, "No existen datos para este usuario en la database");
+                            showErrorMessage("Usuario no encontrado en el sistema");
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "✗ Error obteniendo datos del usuario", error.toException());
+                        showLoading(false);
+                        showErrorMessage("Error de conexión con la base de datos");
+                    }
+                });
+    }
+
+    private void handleLoginSuccess(Usuario usuario, String userId) {
         Log.d(TAG, "=== MANEJANDO LOGIN EXITOSO ===");
 
-        // Guardar datos de sesión según tu estructura de BD
+        // Guardar datos de sesión
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
-        editor.putInt(KEY_USER_ID, userData.getInt("id_usuario"));
-        editor.putString(KEY_USER_NAME, userData.getString("nombre") + " " + userData.getString("apellido"));
-        editor.putString(KEY_USER_EMAIL, userData.getString("correo"));
-        editor.putInt(KEY_USER_ROL, userData.getInt("id_rol"));
+        editor.putString(KEY_USER_ID, userId);
+        editor.putString(KEY_USER_NAME, usuario.getNombre() + " " + usuario.getApellido());
+        editor.putString(KEY_USER_EMAIL, usuario.getCorreo());
+
+        // CORREGIDO - Con validación
+        int rolId = usuario.getIdRol();
+        if (rolId == 0) {
+            rolId = 2; // Default empleado si no tiene rol definido
+        }
+
+        editor.putInt(KEY_USER_ROL, rolId);
         editor.apply();
 
         Log.d(TAG, "Datos guardados en SharedPreferences");
-        Log.d(TAG, "ID Usuario: " + userData.getInt("id_usuario"));
-        Log.d(TAG, "Rol: " + userData.getInt("id_rol"));
+        Log.d(TAG, "ID Usuario: " + userId);
+        Log.d(TAG, "Rol: " + (rolId == 1 ? "Administrador" : "Empleado"));
 
-        // Navegar a la actividad principal según el rol
-        navigateBasedOnRole(userData.getInt("id_rol"));
+        // Navegar según el rol
+        navigateBasedOnRole(rolId);
     }
+
 
     private void navigateBasedOnRole(int idRol) {
         Log.d(TAG, "Navegando según rol: " + idRol);
 
         Intent intent;
 
-        if (idRol == 1) { // Administrador (según tu BD)
+        if (idRol == 1) { // Administrador
             Log.d(TAG, "Navegando a MainAdminActivity");
             intent = new Intent(this, MainAdminActivity.class);
         } else { // Empleado
@@ -448,14 +359,25 @@ public class LoginActivity extends AppCompatActivity {
         Log.d(TAG, "Verificando sesión existente: " + isLoggedIn);
 
         if (isLoggedIn) {
-            int userRole = sharedPreferences.getInt(KEY_USER_ROL, -1);
-            Log.d(TAG, "Sesión existente encontrada, rol: " + userRole);
-            navigateBasedOnRole(userRole);
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser != null) {
+                int userRole = sharedPreferences.getInt(KEY_USER_ROL, -1);
+                Log.d(TAG, "Sesión Firebase activa, rol: " + userRole);
+                navigateBasedOnRole(userRole);
+            } else {
+                // Limpiar sesión si no hay usuario en Firebase
+                logout();
+            }
         }
     }
 
     public void logout() {
         Log.d(TAG, "Cerrando sesión");
+
+        // Cerrar sesión en Firebase
+        mAuth.signOut();
+
+        // Limpiar SharedPreferences
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();

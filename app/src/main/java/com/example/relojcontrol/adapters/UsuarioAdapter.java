@@ -16,8 +16,8 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
 
     public interface OnUsuarioClickListener {
         void onUsuarioClick(Usuario usuario);
-        void onEditUsuario(Usuario usuario);
-        void onDeleteUsuario(Usuario usuario);
+        void onEditClick(Usuario usuario);
+        void onDeleteClick(Usuario usuario);
         void onToggleUsuarioStatus(Usuario usuario);
     }
 
@@ -61,7 +61,7 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
             tvEstado = itemView.findViewById(R.id.tv_estado_usuario);
         }
 
-        // En el método bind del ViewHolder:
+        // En el metodo bind del ViewHolder:
         public void bind(final Usuario usuario, final OnUsuarioClickListener listener) {
             // Configurar datos del usuario
             tvNombre.setText(usuario.getNombreCompleto());
