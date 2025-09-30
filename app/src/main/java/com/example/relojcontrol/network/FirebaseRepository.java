@@ -7,6 +7,8 @@ import com.google.firebase.database.*;
 import com.example.relojcontrol.models.*;
 import java.util.*;
 import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+
 
 public class FirebaseRepository {
     private static final String TAG = "FirebaseRepository";
@@ -352,11 +354,17 @@ public class FirebaseRepository {
     }
 
     private String getCurrentDate() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        TimeZone timezone = TimeZone.getTimeZone("America/Santiago");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        sdf.setTimeZone(timezone);
+        return sdf.format(new Date());
     }
 
     private String getCurrentTime() {
-        return new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+        TimeZone timezone = TimeZone.getTimeZone("America/Santiago");
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        sdf.setTimeZone(timezone);
+        return sdf.format(new Date());
     }
 
     // === INTERFACES ===

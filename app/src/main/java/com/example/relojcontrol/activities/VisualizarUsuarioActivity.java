@@ -2,6 +2,7 @@ package com.example.relojcontrol.activities;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.SharedPreferences;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,6 +40,7 @@ import java.util.Map;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.auth.FirebaseAuth;
 
 
 public class VisualizarUsuarioActivity extends AppCompatActivity {
@@ -157,6 +161,73 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.visualizar_usuario_menu, menu); // o el archivo de menú que corresponda
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) { // o el metodo que corresponda
+        int id = item.getItemId();
+    // Manejar eventos de clic en elementos del menú
+        if (id == android.R.id.home) {
+            getOnBackPressedDispatcher().onBackPressed();
+            return true;
+        } else if (id == R.id.menu_editar) {
+            editarUsuario();
+            return true;
+        } else if (id == R.id.menu_cambiar_estado) {
+            cambiarEstadoUsuario();
+            return true;
+        } else if (id == R.id.menu_reset_password) {
+            resetearPassword();
+            return true;
+        } else if (id == R.id.menu_ver_asistencias) {
+            verAsistenciasUsuario();
+            return true;
+        } else if (id == R.id.menu_ver_justificaciones) {
+            verJustificacionesUsuario();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+    }
+    private void cambiarEstadoUsuario() {
+        // Mostrar Dialog para cambiar estado activo/inactivo
+        Toast.makeText(this, "Función cambiar estado - Por implementar", Toast.LENGTH_SHORT).show();
+    }
+
+    private void verAsistenciasUsuario() {
+        // Navegar a vista de asistencias del usuario
+        Toast.makeText(this, "Función ver asistencias - Por implementar", Toast.LENGTH_SHORT).show();
+    }
+
+    private void verJustificacionesUsuario() {
+        // Navegar a vista de justificaciones del usuario
+        Toast.makeText(this, "Función ver justificaciones - Por implementar", Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void cerrarSesion() {
+        // Limpiar SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences("user_session", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+
+        // Cerrar sesión en Firebase
+        FirebaseAuth.getInstance().signOut();
+
+        // Navegar a LoginActivity
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+
 
     private void setupRecyclerViews() {
         // RecyclerView para historial de asistencia

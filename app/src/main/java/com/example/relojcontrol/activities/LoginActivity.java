@@ -338,21 +338,21 @@ public class LoginActivity extends AppCompatActivity {
         editor.putString(KEY_USER_NAME, usuario.getNombre() + " " + usuario.getApellido());
         editor.putString(KEY_USER_EMAIL, usuario.getCorreo());
 
-        // CORREGIDO - Con validación
-        int rolId = usuario.getIdRol();
-        if (rolId == 0) {
-            rolId = 2; // Default empleado si no tiene rol definido
-        }
+        // DEBUG ROL - Verificar qué rol tiene
+        int idRol = usuario.getIdRol();
+        Log.d(TAG, "ROL DEBUG - Usuario: " + usuario.getNombre());
+        Log.d(TAG, "ROL DEBUG - ID Rol: " + idRol);
+        Log.d(TAG, "ROL DEBUG - ¿Es Admin? " + (idRol == 1));
 
-        editor.putInt(KEY_USER_ROL, rolId);
+        editor.putInt(KEY_USER_ROL, idRol);
         editor.apply();
 
         Log.d(TAG, "Datos guardados en SharedPreferences");
         Log.d(TAG, "ID Usuario: " + userId);
-        Log.d(TAG, "Rol: " + (rolId == 1 ? "Administrador" : "Empleado"));
+        Log.d(TAG, "Rol: " + (idRol == 1 ? "Administrador" : "Empleado"));
 
         // Navegar según el rol
-        navigateBasedOnRole(rolId);
+        navigateBasedOnRole(idRol);
     }
 
 
