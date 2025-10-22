@@ -15,7 +15,6 @@ public class Usuario implements Serializable {
     public Usuario() {}
 
 
-
     // Getters y Setters
     public int getIdUsuario() { return idUsuario; }
     public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
@@ -51,4 +50,6 @@ public class Usuario implements Serializable {
     public String getRolTexto() {
         return idRol == 1 ? "Administrador" : "Empleado";
     }
+
+
 }

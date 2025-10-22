@@ -1,298 +1,460 @@
 package com.example.relojcontrol.activities;
 
-import android.app.DownloadManager;
-import androidx.core.content.ContextCompat;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.net.Uri;
-import android.os.Build;
+import android.app.DatePickerDialog;
 import android.os.Bundle;
-import android.os.Environment;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.util.Log;
 import android.view.View;
-import android.widget.ProgressBar;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
 
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import com.example.relojcontrol.R;
-import com.example.relojcontrol.network.ApiClient;
-import com.example.relojcontrol.network.ApiEndpoints;
+import com.example.relojcontrol.models.Usuario;
+import com.example.relojcontrol.models.Asistencia;
+import com.example.relojcontrol.network.FirebaseRepository;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class ReportesActivity extends AppCompatActivity {
 
+    private static final String TAG = "ReportesActivity";
+
+    // Views - IDs exactos de tu XML
     private Toolbar toolbar;
-    private MaterialButton btnGenerarPdf;
-    private ProgressBar progressBar;
-    private long downloadId;
-    private BroadcastReceiver downloadReceiver;
+
+    // Filtros
+    private TextInputLayout tilRangoFechas, tilUsuario;
+    private AutoCompleteTextView spinnerRangoFechas, spinnerUsuario;
+    private LinearLayout layoutFechasPersonalizadas;
+    private TextInputLayout tilFechaDesde, tilFechaHasta;
+    private TextInputEditText etFechaDesde, etFechaHasta;
+    private MaterialButton btnAplicarFiltros;
+
+    // Tipos de reportes
+    private CardView cardReporteAsistencia, cardReporteAtrasos, cardReporteAusencias;
+
+    // Vista previa
+    private CardView cardVistaPrevia;
+    private TextView tvTituloVistaPrevia;
+    private ImageView ivRefreshPreview;
+    private LinearLayout layoutChartPlaceholder, layoutResumenDatos;
+    private View chartContainer;
+
+    // Stats
+    private TextView tvStat1Value, tvStat1Label;
+    private TextView tvStat2Value, tvStat2Label;
+    private TextView tvStat3Value, tvStat3Label;
+
+    // Exportación
+    private LinearLayout layoutBotonesExportacion;
+    private MaterialButton btnGenerarPdf, btnExportarExcel;
+
+    // Loading
+    private LinearLayout layoutLoadingReporte;
+    private TextView tvLoadingMessage;
+
+    // Data
+    private FirebaseRepository repository;
+    private List<Usuario> usuariosList;
+    private String tipoReporteSeleccionado = "";
+    private String fechaDesde = "";
+    private String fechaHasta = "";
+    private String usuarioSeleccionado = "Todos los usuarios";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reportes);
 
+        Log.d(TAG, "=== ReportesActivity iniciada ===");
+
+        initFirebase();
         initViews();
         setupToolbar();
+        setupSpinners();
+        setupDatePickers();
         setupClickListeners();
-        setupDownloadReceiver();
+        loadUsuarios();
+        configurarFechasIniciales();
+    }
+
+    private void initFirebase() {
+        repository = FirebaseRepository.getInstance();
+        usuariosList = new ArrayList<>();
+        Log.d(TAG, "Firebase repository inicializado");
     }
 
     private void initViews() {
+        // IDs exactos de tu XML
         toolbar = findViewById(R.id.toolbar);
+
+        // Filtros
+        tilRangoFechas = findViewById(R.id.til_rango_fechas);
+        tilUsuario = findViewById(R.id.til_usuario);
+        spinnerRangoFechas = findViewById(R.id.spinner_rango_fechas);
+        spinnerUsuario = findViewById(R.id.spinner_usuario);
+        layoutFechasPersonalizadas = findViewById(R.id.layout_fechas_personalizadas);
+        tilFechaDesde = findViewById(R.id.til_fecha_desde);
+        tilFechaHasta = findViewById(R.id.til_fecha_hasta);
+        etFechaDesde = findViewById(R.id.et_fecha_desde);
+        etFechaHasta = findViewById(R.id.et_fecha_hasta);
+        btnAplicarFiltros = findViewById(R.id.btn_aplicar_filtros);
+
+        // Tipos de reportes
+        cardReporteAsistencia = findViewById(R.id.card_reporte_asistencia);
+        cardReporteAtrasos = findViewById(R.id.card_reporte_atrasos);
+        cardReporteAusencias = findViewById(R.id.card_reporte_ausencias);
+
+        // Vista previa
+        cardVistaPrevia = findViewById(R.id.card_vista_previa);
+        tvTituloVistaPrevia = findViewById(R.id.tv_titulo_vista_previa);
+        ivRefreshPreview = findViewById(R.id.iv_refresh_preview);
+        layoutChartPlaceholder = findViewById(R.id.layout_chart_placeholder);
+        layoutResumenDatos = findViewById(R.id.layout_resumen_datos);
+        chartContainer = findViewById(R.id.chart_container);
+
+        // Stats
+        tvStat1Value = findViewById(R.id.tv_stat1_value);
+        tvStat1Label = findViewById(R.id.tv_stat1_label);
+        tvStat2Value = findViewById(R.id.tv_stat2_value);
+        tvStat2Label = findViewById(R.id.tv_stat2_label);
+        tvStat3Value = findViewById(R.id.tv_stat3_value);
+        tvStat3Label = findViewById(R.id.tv_stat3_label);
+
+        // Exportación
+        layoutBotonesExportacion = findViewById(R.id.layout_botones_exportacion);
         btnGenerarPdf = findViewById(R.id.btn_generar_pdf);
-        progressBar = findViewById(R.id.progressBar);
+        btnExportarExcel = findViewById(R.id.btn_exportar_excel);
+
+        // Loading
+        layoutLoadingReporte = findViewById(R.id.layout_loading_reporte);
+        tvLoadingMessage = findViewById(R.id.tv_loading_message);
+
+        Log.d(TAG, "Views inicializadas");
     }
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("Reportes de Asistencia");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        toolbar.setNavigationOnClickListener(v -> finish());
+
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+    }
+
+    private void setupSpinners() {
+        // Configurar spinner de rango de fechas
+        String[] rangosFechas = {"Esta semana", "Este mes", "Últimos 30 días", "Personalizado"};
+        ArrayAdapter<String> adapterRangos = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, rangosFechas);
+        spinnerRangoFechas.setAdapter(adapterRangos);
+        spinnerRangoFechas.setText("Esta semana", false);
+
+        spinnerRangoFechas.setOnItemClickListener((parent, view, position, id) -> {
+            String rangoSeleccionado = (String) parent.getItemAtPosition(position);
+            manejarSeleccionRango(rangoSeleccionado);
+        });
+
+        Log.d(TAG, "Spinners configurados");
+    }
+
+    private void setupDatePickers() {
+        etFechaDesde.setOnClickListener(v -> mostrarDatePicker(etFechaDesde, "Seleccionar fecha desde"));
+        etFechaHasta.setOnClickListener(v -> mostrarDatePicker(etFechaHasta, "Seleccionar fecha hasta"));
+
+        Log.d(TAG, "Date pickers configurados");
     }
 
     private void setupClickListeners() {
-        btnGenerarPdf.setOnClickListener(v -> {
-            generarReportePdf();
+        btnAplicarFiltros.setOnClickListener(v -> aplicarFiltros());
+
+        // Tipos de reportes
+        cardReporteAsistencia.setOnClickListener(v -> seleccionarTipoReporte("asistencia"));
+        cardReporteAtrasos.setOnClickListener(v -> seleccionarTipoReporte("atrasos"));
+        cardReporteAusencias.setOnClickListener(v -> seleccionarTipoReporte("ausencias"));
+
+        // Vista previa
+        ivRefreshPreview.setOnClickListener(v -> actualizarVistaPrevia());
+
+        // Exportación
+        btnGenerarPdf.setOnClickListener(v -> generarPDF());
+        btnExportarExcel.setOnClickListener(v -> exportarExcel());
+
+        Log.d(TAG, "Click listeners configurados");
+    }
+
+    private void loadUsuarios() {
+        Log.d(TAG, "Cargando usuarios para filtro");
+
+        repository.obtenerUsuarios(new FirebaseRepository.DataCallback<List<Usuario>>() {
+            @Override
+            public void onSuccess(List<Usuario> usuarios) {
+                usuariosList.clear();
+                usuariosList.addAll(usuarios);
+
+                // Configurar spinner de usuarios
+                List<String> nombresUsuarios = new ArrayList<>();
+                nombresUsuarios.add("Todos los usuarios");
+
+                for (Usuario usuario : usuarios) {
+                    String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
+                    nombresUsuarios.add(nombreCompleto);
+                }
+
+                ArrayAdapter<String> adapterUsuarios = new ArrayAdapter<>(ReportesActivity.this,
+                        android.R.layout.simple_dropdown_item_1line, nombresUsuarios);
+                spinnerUsuario.setAdapter(adapterUsuarios);
+                spinnerUsuario.setText("Todos los usuarios", false);
+
+                Log.d(TAG, "✓ Usuarios cargados para filtro: " + usuarios.size());
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Log.e(TAG, "✗ Error cargando usuarios", error);
+                Toast.makeText(ReportesActivity.this,
+                        "Error cargando usuarios", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
-    private void setupDownloadReceiver() {
-        downloadReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                long receivedDownloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                if (receivedDownloadId == downloadId) {
-                    Toast.makeText(ReportesActivity.this,
-                            "PDF descargado exitosamente",
-                            Toast.LENGTH_SHORT).show();
+    private void configurarFechasIniciales() {
+        // Configurar fechas para "Esta semana" por defecto
+        Calendar calendar = Calendar.getInstance();
 
-                    abrirPdfDescargado();
-                }
-            }
-        };
+        // Fecha hasta = hoy
+        fechaHasta = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.getTime());
 
-        // CORRECCIÓN PARA ANDROID 14+
-        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-// Con targetSdk 36, usar siempre ContextCompat
-        ContextCompat.registerReceiver(this, downloadReceiver, filter,
-                ContextCompat.RECEIVER_NOT_EXPORTED);
+        // Fecha desde = hace 7 días
+        calendar.add(Calendar.DAY_OF_YEAR, -7);
+        fechaDesde = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.getTime());
+
+        Log.d(TAG, "Fechas configuradas - Desde: " + fechaDesde + ", Hasta: " + fechaHasta);
     }
 
-    private void generarReportePdf() {
-        progressBar.setVisibility(View.VISIBLE);
-        btnGenerarPdf.setEnabled(false);
+    private void manejarSeleccionRango(String rango) {
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
+        if ("Personalizado".equals(rango)) {
+            layoutFechasPersonalizadas.setVisibility(View.VISIBLE);
+            return;
+        } else {
+            layoutFechasPersonalizadas.setVisibility(View.GONE);
+        }
 
-            Map<String, Object> params = obtenerParametrosFiltros();
+        // Fecha hasta = hoy
+        fechaHasta = dateFormat.format(calendar.getTime());
 
-            JsonObjectRequest request = new JsonObjectRequest(
-                    Request.Method.POST,
-                    ApiEndpoints.REPORTES_GENERAR,
-                    new JSONObject(params),
-                    new Response.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) {
-                            progressBar.setVisibility(View.GONE);
-                            btnGenerarPdf.setEnabled(true);
+        switch (rango) {
+            case "Esta semana":
+                calendar.add(Calendar.DAY_OF_YEAR, -7);
+                break;
+            case "Este mes":
+                calendar.add(Calendar.MONTH, -1);
+                break;
+            case "Últimos 30 días":
+                calendar.add(Calendar.DAY_OF_YEAR, -30);
+                break;
+        }
 
-                            try {
-                                if (response.getBoolean("success")) {
-                                    String urlPdf = response.getString("url_pdf");
-                                    Toast.makeText(ReportesActivity.this,
-                                            "Generando PDF...",
-                                            Toast.LENGTH_SHORT).show();
+        fechaDesde = dateFormat.format(calendar.getTime());
+        Log.d(TAG, "Rango actualizado - " + rango + ": " + fechaDesde + " a " + fechaHasta);
+    }
 
-                                    descargarPdf(urlPdf);
+    private void mostrarDatePicker(TextInputEditText editText, String titulo) {
+        Calendar calendar = Calendar.getInstance();
 
-                                } else {
-                                    String error = response.getString("message");
-                                    Toast.makeText(ReportesActivity.this,
-                                            "Error: " + error,
-                                            Toast.LENGTH_SHORT).show();
-                                }
-                            } catch (JSONException e) {
-                                Toast.makeText(ReportesActivity.this,
-                                        "Error en formato de respuesta",
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    },
-                    new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            progressBar.setVisibility(View.GONE);
-                            btnGenerarPdf.setEnabled(true);
-                            Toast.makeText(ReportesActivity.this,
-                                    "Error de conexión",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    Calendar selectedDate = Calendar.getInstance();
+                    selectedDate.set(year, month, dayOfMonth);
+
+                    String dateString = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            .format(selectedDate.getTime());
+                    editText.setText(dateString);
+
+                    // Actualizar variables según el campo
+                    if (editText == etFechaDesde) {
+                        fechaDesde = dateString;
+                    } else if (editText == etFechaHasta) {
+                        fechaHasta = dateString;
                     }
-            );
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
 
-            ApiClient.getInstance(this).addToRequestQueue(request);
-
-
+        datePickerDialog.setTitle(titulo);
+        datePickerDialog.show();
     }
 
-    private Map<String, Object> obtenerParametrosFiltros() {
-        Map<String, Object> params = new HashMap<>();
+    private void aplicarFiltros() {
+        Log.d(TAG, "Aplicando filtros de reporte");
 
-        String tipoReporte = obtenerTipoReporteSeleccionado();
-        String fechaInicio = obtenerFechaInicio();
-        String fechaFin = obtenerFechaFin();
-        int idUsuario = obtenerUsuarioSeleccionado();
+        // Si es rango personalizado, usar las fechas de los campos
+        if ("Personalizado".equals(spinnerRangoFechas.getText().toString())) {
+            fechaDesde = etFechaDesde.getText().toString().trim();
+            fechaHasta = etFechaHasta.getText().toString().trim();
 
-        params.put("tipo_reporte", tipoReporte);
-        params.put("fecha_inicio", fechaInicio);
-        params.put("fecha_fin", fechaFin);
-        params.put("id_usuario", idUsuario);
-
-        return params;
-    }
-
-    private void descargarPdf(String urlPdf) {
-        try {
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                    .format(new Date());
-            String fileName = "reporte_asistencia_" + timeStamp + ".pdf";
-
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(urlPdf))
-                    .setTitle("Reporte de Asistencia")
-                    .setDescription("Descargando reporte PDF")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-                    .setAllowedOverMetered(true)
-                    .setAllowedOverRoaming(true);
-
-            DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            if (downloadManager != null) {
-                downloadId = downloadManager.enqueue(request);
-                Toast.makeText(this, "Descargando PDF...", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Error al iniciar descarga", Toast.LENGTH_SHORT).show();
+            if (fechaDesde.isEmpty() || fechaHasta.isEmpty()) {
+                Toast.makeText(this, "Seleccione ambas fechas", Toast.LENGTH_SHORT).show();
+                return;
             }
-
-        } catch (Exception e) {
-            Toast.makeText(this, "Error al descargar PDF", Toast.LENGTH_SHORT).show();
         }
+
+        usuarioSeleccionado = spinnerUsuario.getText().toString();
+
+        Toast.makeText(this, "Filtros aplicados correctamente", Toast.LENGTH_SHORT).show();
+
+        // Si hay un tipo de reporte seleccionado, actualizar la vista previa
+        if (!tipoReporteSeleccionado.isEmpty()) {
+            actualizarVistaPrevia();
+        }
+
+        Log.d(TAG, "Filtros aplicados - Período: " + fechaDesde + " a " + fechaHasta +
+                ", Usuario: " + usuarioSeleccionado);
     }
 
-    private void abrirPdfDescargado() {
-        try {
-            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File[] files = downloadsDir.listFiles((dir, name) -> name.startsWith("reporte_asistencia_") && name.endsWith(".pdf"));
+    private void seleccionarTipoReporte(String tipo) {
+        Log.d(TAG, "Tipo de reporte seleccionado: " + tipo);
 
-            if (files != null && files.length > 0) {
-                File latestFile = files[0];
-                for (File file : files) {
-                    if (file.lastModified() > latestFile.lastModified()) {
-                        latestFile = file;
-                    }
-                }
+        tipoReporteSeleccionado = tipo;
 
-                // Usar FileProvider para Android 7+ (API 24+)
-                Uri pdfUri;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    pdfUri = androidx.core.content.FileProvider.getUriForFile(
-                            this,
-                            getPackageName() + ".provider",
-                            latestFile
-                    );
-                } else {
-                    pdfUri = Uri.fromFile(latestFile);
-                }
+        // Mostrar vista previa
+        cardVistaPrevia.setVisibility(View.VISIBLE);
+        layoutBotonesExportacion.setVisibility(View.VISIBLE);
 
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(pdfUri, "application/pdf");
-                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        // Actualizar título según el tipo
+        switch (tipo) {
+            case "asistencia":
+                tvTituloVistaPrevia.setText("Reporte de Asistencia");
+                break;
+            case "atrasos":
+                tvTituloVistaPrevia.setText("Reporte de Atrasos");
+                break;
+            case "ausencias":
+                tvTituloVistaPrevia.setText("Reporte de Ausencias");
+                break;
+        }
 
-                if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(this,
-                            "Instala una app para ver PDFs",
-                            Toast.LENGTH_SHORT).show();
-                }
+        // Generar vista previa
+        actualizarVistaPrevia();
+    }
+
+    private void actualizarVistaPrevia() {
+        Log.d(TAG, "Actualizando vista previa del reporte: " + tipoReporteSeleccionado);
+
+        showLoading(true);
+
+        // Simular carga de datos
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000); // Simular procesamiento
+
+                runOnUiThread(() -> {
+                    generarDatosMockup();
+                    showLoading(false);
+                    mostrarVistaPrevia();
+                });
+
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Error en simulación", e);
             }
-        } catch (Exception e) {
-            Toast.makeText(this,
-                    "PDF descargado en la carpeta Descargas",
-                    Toast.LENGTH_LONG).show();
+        }).start();
+    }
+
+    private void generarDatosMockup() {
+        // Generar datos de ejemplo según el tipo de reporte
+        switch (tipoReporteSeleccionado) {
+            case "asistencia":
+                tvStat1Value.setText("87%");
+                tvStat1Label.setText("Asistencia");
+                tvStat2Value.setText("24");
+                tvStat2Label.setText("Días trabajados");
+                tvStat3Value.setText("3");
+                tvStat3Label.setText("Días faltantes");
+                break;
+
+            case "atrasos":
+                tvStat1Value.setText("12");
+                tvStat1Label.setText("Total atrasos");
+                tvStat2Value.setText("8 min");
+                tvStat2Label.setText("Promedio");
+                tvStat3Value.setText("35 min");
+                tvStat3Label.setText("Mayor atraso");
+                break;
+
+            case "ausencias":
+                tvStat1Value.setText("5");
+                tvStat1Label.setText("Ausencias");
+                tvStat2Value.setText("3");
+                tvStat2Label.setText("Justificadas");
+                tvStat3Value.setText("2");
+                tvStat3Label.setText("Sin justificar");
+                break;
+        }
+
+        Log.d(TAG, "Datos mockup generados para: " + tipoReporteSeleccionado);
+    }
+
+    private void mostrarVistaPrevia() {
+        // Ocultar placeholder y mostrar contenido
+        layoutChartPlaceholder.setVisibility(View.GONE);
+        layoutResumenDatos.setVisibility(View.VISIBLE);
+        chartContainer.setVisibility(View.VISIBLE);
+
+        // Aquí se implementaría la lógica real para generar gráficos
+        // Por ejemplo, usando una librería como MPAndroidChart
+
+        Log.d(TAG, "Vista previa mostrada");
+    }
+
+    private void showLoading(boolean show) {
+        tvLoadingMessage.setText("Generando reporte de " + tipoReporteSeleccionado + "...");
+        layoutLoadingReporte.setVisibility(show ? View.VISIBLE : View.GONE);
+
+        if (show) {
+            layoutChartPlaceholder.setVisibility(View.VISIBLE);
+            layoutResumenDatos.setVisibility(View.GONE);
+            chartContainer.setVisibility(View.GONE);
         }
     }
 
-    // MÉTODOS AUXILIARES (implementar según filtros)
-    private String obtenerTipoReporteSeleccionado() {
-        return "asistencias";
+    private void generarPDF() {
+        Log.d(TAG, "Generando PDF del reporte: " + tipoReporteSeleccionado);
+
+        Toast.makeText(this, "Generando PDF... (Funcionalidad en desarrollo)", Toast.LENGTH_LONG).show();
+
+        // Implementar generación de PDF
+        // Usar librerías como iText o PDFDocument
     }
 
-    private String obtenerFechaInicio() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-    }
+    private void exportarExcel() {
+        Log.d(TAG, "Exportando a Excel el reporte: " + tipoReporteSeleccionado);
 
-    private String obtenerFechaFin() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-    }
+        Toast.makeText(this, "Exportando a Excel... (Funcionalidad en desarrollo)", Toast.LENGTH_LONG).show();
 
-    private int obtenerUsuarioSeleccionado() {
-        return 0;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (downloadReceiver != null) {
-            unregisterReceiver(downloadReceiver);
-        }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.menu_usuarios) {
-            finish();
-            return true;
-        } else if (id == R.id.menu_justificaciones) {
-            finish();
-            return true;
-        } else if (id == R.id.menu_reportes) {
-            return true;
-        } else if (id == R.id.menu_cerrar_sesion) {
-            finishAffinity();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        // Implementar exportación a Excel
+        // Usar librerías como Apache POI
     }
 }
