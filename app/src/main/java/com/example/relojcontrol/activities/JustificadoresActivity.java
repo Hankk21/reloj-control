@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -138,6 +140,40 @@ public class JustificadoresActivity extends AppCompatActivity {
 
         Log.d(TAG, "Views inicializadas");
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.empleado_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if(id == R.id.menu_mis_justificaciones) {
+            mostrarJustificaciones();
+            return true;
+        } else if (id == R.id.menu_mis_licencias) {
+            mostrarLicencias();
+            return true;
+        }else{
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void mostrarJustificaciones() {
+        tipoSeleccionado = "Justificaciones";
+        actualizarFormulario();
+        actualizarTituloHistorial();
+    }
+
+    private void mostrarLicencias() {
+        tipoSeleccionado = "Licencias";
+        actualizarFormulario();
+        actualizarTituloHistorial();
+    }
+
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);

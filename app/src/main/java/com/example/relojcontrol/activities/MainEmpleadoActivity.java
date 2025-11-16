@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -91,6 +93,46 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Registro de Asistencia");
         }
+    }
+    // configuracion de toolbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.empleado_menu, menu);
+        return true;
+    }
+
+    //manejar eventos en menu
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.menu_mi_asistencia) {
+            //codigo
+
+        }else if (id == R.id.menu_mis_justificaciones) {
+            Intent intentJustificaciones = new Intent(this, JustificadoresActivity.class);
+            intentJustificaciones.putExtra("tipo", "Justificaciones");
+            startActivity(intentJustificaciones);
+            return true;
+        } else if (id == R.id.menu_mis_licencias) {
+            Intent intentLicencias = new Intent(this, JustificadoresActivity.class);
+            intentLicencias.putExtra("tipo", "Licencias");
+            startActivity(intentLicencias);
+            return true;
+
+        } else if (id == R.id.menu_cerrar_sesion) {
+            SharedPreferences preferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
+            preferences.edit().clear().apply();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return true;
+        }else{
+            return super.onOptionsItemSelected(item);
+        }
+        return false;
     }
 
     private void loadUserData() {
