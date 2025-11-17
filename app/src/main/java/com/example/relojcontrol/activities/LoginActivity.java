@@ -364,8 +364,12 @@ public class LoginActivity extends AppCompatActivity {
         if (idRol == 1) { // Administrador
             Log.d(TAG, "Navegando a MainAdminActivity");
             intent = new Intent(this, MainAdminActivity.class);
-        } else { // Empleado
+        } else if (idRol == 2) { // Empleado
             Log.d(TAG, "Navegando a MainEmpleadoActivity");
+            intent = new Intent(this, MainEmpleadoActivity.class);
+        } else {
+            //por defecto, enviar a empleado si hay rol desconocido
+            Log.w(TAG, "Rol desconocido: "+ idRol);
             intent = new Intent(this, MainEmpleadoActivity.class);
         }
 
