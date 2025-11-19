@@ -16,7 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 
+import com.example.relojcontrol.activities.admin.JustificacionesAdminActivity;
+import com.example.relojcontrol.activities.admin.LicenciasAdminActivity;
 import com.example.relojcontrol.models.Asistencia;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
@@ -108,6 +111,60 @@ public class MainAdminActivity extends AppCompatActivity {
     }
 
     //manejar eventos de menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.menu_usuarios) {
+            //navegar a la pantalla de gestion de usuarios
+            Intent intent = new Intent(this, UsuariosActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_reportes) {
+            //navegar a pantalla de reportes
+            Intent intent = new Intent(this, ReportesActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_justificaciones) {
+            //navegar a pantalla de justificaciones
+            Intent intent = new Intent(this, JustificacionesAdminActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_licencias) {
+            //navegar a pantalla de licencias
+            Intent intent = new Intent(this, LicenciasAdminActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_ver_asistencias) {
+            //navegar a pantalla de licencias
+            Intent intent = new Intent(this, Asistencia.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_cerrar_sesion) {
+            //cerrar sesion
+            cerrarSesion();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    //metodo para cerrar sesion
+    private void cerrarSesion() {
+        //limpiar los sharedpreferences
+        SharedPreferences preferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
+        preferences.edit().clear().apply();
+
+        FirebaseAuth.getInstance().signOut();
+
+        //navegar al login
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+
+        Toast.makeText(this,"Sesión Cerrada", Toast.LENGTH_SHORT).show();
+    }
 
     private void loadUserData() {
         userName = sharedPreferences.getString("user_name", "Administrador");

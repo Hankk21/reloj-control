@@ -35,4 +35,19 @@
     <color name="aceptado_color">#4CAF50</color>
     <color name="rechazado_color">#F44336</color>
     <color name="info_color">#2196F3</color>
+
+    <!-- Colores varios -->
+    <?xml version="1.0" encoding="utf-8"?>
+    <resources>
+        <color name="primaryColor">#1976D2</color>
+        <color name="accentColor">#FFC107</color>
+        <color name="backgroundColor">#F5F5F5</color>
+        <color name="textPrimaryColor">#212121</color>
+        <color name="textSecondaryColor">#757575</color>
+        <color name="dividerColor">#E0E0E0</color>
+        <color name="successColor">#4CAF50</color>
+        <color name="errorColor">#F44336</color>
+    </resources>
+
+
 </resources>

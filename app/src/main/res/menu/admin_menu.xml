@@ -3,11 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- Ícono de refresh visible en el Toolbar -->
-    <item
-        android:id="@+id/action_refresh"
-        android:title="Actualizar"
-        android:icon="@drawable/ic_refresh"
-        app:showAsAction="ifRoom" />
 
     <!-- Opciones del menú desplegable (tres puntos) -->
     <item
@@ -16,8 +11,9 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_logout"
+        android:id="@+id/menu_cerrar_sesion"
         android:title="Cerrar Sesión"
+        android:icon="@drawable/ic_logout"
         app:showAsAction="never" />
 
 </menu>

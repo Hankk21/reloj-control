@@ -1,4 +1,4 @@
-package com.example.relojcontrol.activities;
+package com.example.relojcontrol.activities.empleado;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,6 +14,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import com.example.relojcontrol.activities.JustificadoresActivity;
+import com.example.relojcontrol.activities.LoginActivity;
 import com.google.android.material.button.MaterialButton;
 
 import com.example.relojcontrol.R;
@@ -24,7 +26,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class MainEmpleadoActivity extends AppCompatActivity {
 

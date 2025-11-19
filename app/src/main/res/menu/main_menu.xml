@@ -4,12 +4,6 @@
 
     <!-- Menú para Admin -->
     <item
-        android:id="@+id/menu_dashboard"
-        android:title="Dashboard"
-        android:icon="@drawable/ic_list_alt"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/menu_usuarios"
         android:title="Usuarios"
         android:icon="@drawable/ic_logo_users"
@@ -38,16 +32,5 @@
         android:title="Cerrar Sesión"
         android:icon="@drawable/ic_logout"
         app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_refresh"
-        android:title="Refresh"
-        android:icon="@drawable/ic_refresh"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_clear_filters"
-        android:title="Limpiar filtros"
-        app:showAsAction="ifRoom" />
 
 </menu>

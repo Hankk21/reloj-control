@@ -48,9 +48,12 @@ dependencies {
     implementation ("com.google.firebase:firebase-database")      // Para datos
     implementation ("com.google.firebase:firebase-storage")       // Para archivos
 
-    // Glide (opcional, para cargar imágenes/archivos)
+    // Glide (para cargar imágenes/archivos)
     implementation ("com.github.bumptech.glide:glide:5.0.5")
     annotationProcessor ("com.github.bumptech.glide:compiler:5.0.5")
+
+    // MPAndroidChart para graficos
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     // Gson para parsear JSON
     implementation ("com.google.code.gson:gson:2.13.2")

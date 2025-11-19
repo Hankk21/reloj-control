@@ -53,7 +53,7 @@
             android:parentActivityName=".activities.LoginActivity" />
 
         <activity
-            android:name=".activities.MainEmpleadoActivity"
+            android:name=".activities.empleado.MainEmpleadoActivity"
             android:exported="false" />
 
         <activity
