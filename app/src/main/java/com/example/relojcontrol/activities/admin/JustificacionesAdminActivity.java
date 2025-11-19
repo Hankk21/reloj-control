@@ -27,73 +27,157 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JustificacionesAdminActivity extends AppCompatActivity {
+    private static final String TAG = "JustificacionesAdminActivity";
+
     private RecyclerView recyclerView;
     private JustificacionesAdminAdapter adapter;
     private List<Justificacion> listaJustificaciones;
     private DatabaseReference justificacionesRef;
+    private ProgressBar progressBar;
+    private TextView tvEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_justificaciones_admin);
 
-        // Configurar toolbar
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Gestión de Justificaciones");
-
-        recyclerView = findViewById(R.id.recyclerViewJustificaciones);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        listaJustificaciones = new ArrayList<>();
-        adapter = new JustificacionesAdminAdapter(listaJustificaciones, this);
-        recyclerView.setAdapter(adapter);
-
+        initViews();
+        setupToolbar();
+        setupRecyclerView();
         cargarJustificaciones();
     }
 
-    private void cargarJustificaciones() {
-        justificacionesRef = FirebaseDatabase.getInstance()
-                .getReference("justificaciones");
+    private void initViews() {
+        recyclerView = findViewById(R.id.recyclerViewJustificaciones);
+        progressBar = findViewById(R.id.progressBar);
+        tvEmpty = findViewById(R.id.tvEmpty);
+    }
 
-        justificacionesRef.orderByChild("id_estado").equalTo(2) // Pendientes
+    private void setupToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Gestión de Justificaciones");
+        }
+    }
+
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        listaJustificaciones = new ArrayList<>();
+        adapter = new JustificacionesAdminAdapter(listaJustificaciones, this);
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void cargarJustificaciones() {
+        showLoading(true);
+        justificacionesRef = FirebaseDatabase.getInstance().getReference("justificaciones");
+
+        // Cargar solo justificaciones pendientes (estado = 2)
+        justificacionesRef.orderByChild("id_estado").equalTo(2)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         listaJustificaciones.clear();
-                        for (DataSnapshot data : snapshot.getChildren()) {
-                            Justificacion justificacion = data.getValue(Justificacion.class);
-                            justificacion.setId(data.getKey());
-                            listaJustificaciones.add(justificacion);
+
+                        if (snapshot.exists()) {
+                            for (DataSnapshot data : snapshot.getChildren()) {
+                                Justificacion justificacion = data.getValue(Justificacion.class);
+                                if (justificacion != null) {
+                                    justificacion.setId(data.getKey());
+                                    listaJustificaciones.add(justificacion);
+                                }
+                            }
+
+                            showEmptyState(false);
+                            adapter.notifyDataSetChanged();
+                            Log.d(TAG, "Justificaciones cargadas: " + listaJustificaciones.size());
+                        } else {
+                            showEmptyState(true);
+                            Log.d(TAG, "No hay justificaciones pendientes");
                         }
-                        adapter.notifyDataSetChanged();
+
+                        showLoading(false);
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        showLoading(false);
+                        Log.e(TAG, "Error al cargar justificaciones: " + error.getMessage());
                         Toast.makeText(JustificacionesAdminActivity.this,
-                                "Error al cargar", Toast.LENGTH_SHORT).show();
+                                "Error al cargar justificaciones", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    public void aprobarJustificacion(String justificacionId) {
-        justificacionesRef.child(justificacionId)
-                .child("id_estado").setValue(3) // 3 = Aprobado
-                .addOnSuccessListener(aVoid ->
-                        Toast.makeText(this, "Justificación aprobada", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error al aprobar", Toast.LENGTH_SHORT).show());
+    public void aprobarJustificacion(String justificacionId, int position) {
+        if (justificacionId == null) return;
+
+        justificacionesRef.child(justificacionId).child("id_estado").setValue(3) // 3 = Aprobado
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Justificación aprobada", Toast.LENGTH_SHORT).show();
+                    listaJustificaciones.remove(position);
+                    adapter.notifyItemRemoved(position);
+
+                    if (listaJustificaciones.isEmpty()) {
+                        showEmptyState(true);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error al aprobar justificación", e);
+                    Toast.makeText(this, "Error al aprobar", Toast.LENGTH_SHORT).show();
+                });
     }
 
-    public void rechazarJustificacion(String justificacionId) {
-        justificacionesRef.child(justificacionId)
-                .child("id_estado").setValue(4) // 4 = Rechazado
-                .addOnSuccessListener(aVoid ->
-                        Toast.makeText(this, "Justificación rechazada", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error al rechazar", Toast.LENGTH_SHORT).show());
+    public void rechazarJustificacion(String justificacionId, int position) {
+        if (justificacionId == null) return;
+
+        justificacionesRef.child(justificacionId).child("id_estado").setValue(4) // 4 = Rechazado
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Justificación rechazada", Toast.LENGTH_SHORT).show();
+                    listaJustificaciones.remove(position);
+                    adapter.notifyItemRemoved(position);
+
+                    if (listaJustificaciones.isEmpty()) {
+                        showEmptyState(true);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error al rechazar justificación", e);
+                    Toast.makeText(this, "Error al rechazar", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void showLoading(boolean show) {
+        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    private void showEmptyState(boolean show) {
+        tvEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Limpiar listeners si es necesario
+        if (justificacionesRef != null) {
+            justificacionesRef.removeEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {}
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {}
+            });
+        }
     }
 }
-

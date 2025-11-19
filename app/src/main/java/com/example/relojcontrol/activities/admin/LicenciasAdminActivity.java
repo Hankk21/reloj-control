@@ -170,7 +170,7 @@ public class LicenciasAdminActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Limpiar listeners si es necesario
+        // Limpiar listeners de Firebase
         if (licenciasRef != null) {
             licenciasRef.removeEventListener(new ValueEventListener() {
                 @Override
@@ -181,4 +181,3 @@ public class LicenciasAdminActivity extends AppCompatActivity {
         }
     }
 }
-

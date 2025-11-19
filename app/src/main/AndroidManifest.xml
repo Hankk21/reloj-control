@@ -36,7 +36,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Activities adicionales basadas en tus errores -->
         <activity
             android:name=".activities.ReportesActivity"
             android:exported="false"
@@ -67,6 +66,15 @@
         <activity
             android:name=".activities.MainAdminActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".activities.admin.JustificacionesAdminActivity"
+            android:parentActivityName=".activities.MainAdminActivity" />
+
+        <activity
+            android:name=".activities.admin.LicenciasAdminActivity"
+            android:parentActivityName=".activities.MainAdminActivity" />
+
 
 
         <!-- FileProvider para compartir archivos -->

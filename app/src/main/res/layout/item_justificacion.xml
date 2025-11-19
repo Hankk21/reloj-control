@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:strokeColor="@color/primaryColor"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,89 +16,133 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Encabezado con motivo -->
         <TextView
-            android:id="@+id/tv_usuario"
+            android:id="@+id/tvMotivo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="Motivo de la justificación"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textSize="16sp" />
+            android:textColor="@color/primaryColor"
+            android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:id="@+id/tv_fecha"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="4dp" />
-
-        <TextView
-            android:id="@+id/tv_motivo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-
-        <TextView
-            android:id="@+id/tv_evidencia"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
+        <!-- Información del empleado -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginBottom="4dp">
 
             <TextView
-                android:id="@+id/tv_estado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👤 "
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvEmpleado"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_fecha_solicitud"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
+                android:text="Empleado"
+                android:textSize="14sp"
+                android:textColor="@color/textPrimaryColor" />
         </LinearLayout>
 
+        <!-- Descripción -->
+        <TextView
+            android:id="@+id/tvDescripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Descripción de la justificación"
+            android:textSize="14sp"
+            android:textColor="@color/textSecondaryColor"
+            android:layout_marginBottom="8dp"
+            android:maxLines="3"
+            android:ellipsize="end" />
+
+        <!-- Fecha a justificar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="12dp"
-            android:gravity="end">
+            android:layout_marginBottom="4dp">
 
-            <Button
-                android:id="@+id/btn_archivo"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Archivo"
-                android:layout_marginEnd="8dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                android:text="📅 "
+                android:textSize="14sp" />
 
-            <Button
-                android:id="@+id/btn_rechazar"
+            <TextView
+                android:id="@+id/tvFecha"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Fecha a justificar: 2025-11-19"
+                android:textSize="14sp"
+                android:textColor="@color/textPrimaryColor" />
+        </LinearLayout>
+
+        <!-- Fecha de creación -->
+        <TextView
+            android:id="@+id/tvFechaCreacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Solicitado: 2025-11-19"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondaryColor"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Indicador de documento -->
+        <TextView
+            android:id="@+id/tvDocumento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📎 Documento adjunto"
+            android:textSize="12sp"
+            android:textColor="@color/accentColor"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Divisor -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/dividerColor"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Botones de acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRechazar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Rechazar"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/errorColor"
+                app:cornerRadius="8dp"
                 android:layout_marginEnd="8dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
+                style="@style/Widget.Material3.Button" />
 
-            <Button
-                android:id="@+id/btn_aprobar"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAprobar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Aprobar"
-                style="@style/Theme.Material3.DynamicColors.Dark" />
+                android:textColor="@color/white"
+                app:backgroundTint="@color/successColor"
+                app:cornerRadius="8dp"
+                style="@style/Widget.Material3.Button" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>
