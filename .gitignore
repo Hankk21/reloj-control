@@ -1,7 +1,7 @@
+# Archivos de compilación
 *.iml
 .gradle
 /local.properties
-/.idea
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -13,7 +13,10 @@
 /captures
 .externalNativeBuild
 .cxx
-local.properties
-# Ignorar archivo específico de configuración de Android Studio
+
+# Específico de Android Studio
 .idea/deploymentTargetSelector.xml
-.idea/
+
+# Archivos generados por el sistema
+Thumbs.db
+Desktop.ini
