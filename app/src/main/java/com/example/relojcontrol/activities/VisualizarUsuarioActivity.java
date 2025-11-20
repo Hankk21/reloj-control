@@ -74,7 +74,6 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     private FirebaseRepository repository;
     private String usuarioId;
     private Usuario usuario;
-    private HistorialAdapter historialAdapter;  // Para asistencias
     private JustificacionesAdapter justificacionesAdapter;  // Para justificaciones
 
     private List<Asistencia> asistenciasList;
@@ -230,17 +229,16 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
 
     private void setupRecyclerViews() {
         // RecyclerView para historial de asistencia
-        List<Object> historialAsistenciaList = new ArrayList<>(); // ← NUEVO
-        historialAdapter = new HistorialAdapter(historialAsistenciaList, null);
-        rvHistorialAsistencia.setLayoutManager(new LinearLayoutManager(this));
-        rvHistorialAsistencia.setAdapter(historialAdapter);
+        rvHistorialAsistencia.setVisibility(View.GONE);
+        tvNoHistorialAsistencia.setVisibility(View.VISIBLE);
+        tvNoHistorialAsistencia.setText("Historial de asistencias próximamente"); //oculto hasta crear un AsistenciaAdapter
 
         // RecyclerView para justificaciones
-        justificacionesAdapter = new JustificacionesAdapter(justificacionesList);
+        justificacionesAdapter = new JustificacionesAdapter(justificacionesList, this);
         rvHistorialJustificaciones.setLayoutManager(new LinearLayoutManager(this));
         rvHistorialJustificaciones.setAdapter(justificacionesAdapter);
 
-        Log.d(TAG, "RecyclerViews configurados con adapters existentes");
+        Log.d(TAG, "RecyclerViews configurados");
     }
 
 
@@ -362,7 +360,6 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
                 } else {
                     rvHistorialAsistencia.setVisibility(View.VISIBLE);
                     tvNoHistorialAsistencia.setVisibility(View.GONE);
-                    historialAdapter.notifyDataSetChanged();
                 }
             }
 
