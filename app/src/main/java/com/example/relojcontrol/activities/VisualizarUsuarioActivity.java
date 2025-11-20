@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 
 import com.example.relojcontrol.R;
-import com.example.relojcontrol.adapters.HistorialAdapter;
 import com.example.relojcontrol.adapters.JustificacionesAdapter;
 import com.example.relojcontrol.models.Usuario;
 import com.example.relojcontrol.models.Asistencia;
@@ -36,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

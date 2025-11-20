@@ -467,7 +467,7 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void mostrarHistorialJustificaciones() {
         if (justificacionesAdapter == null) {
-            justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones, this);
+            justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones,this);
             rvHistorial.setLayoutManager(new LinearLayoutManager(this));
             rvHistorial.setAdapter(justificacionesAdapter);
         } else {
