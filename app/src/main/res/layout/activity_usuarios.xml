@@ -88,7 +88,7 @@
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_añadir_usuario"
+        android:id="@+id/btn_anadir_usuario"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
@@ -126,10 +126,26 @@
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton android:id="@+id/btn_exportar" android:visibility="gone" android:layout_width="0dp" android:layout_height="0dp"/>
-    <LinearLayout android:id="@+id/layout_paginacion" android:visibility="gone" android:layout_width="0dp" android:layout_height="0dp">
-        <Button android:id="@+id/btn_pagina_anterior" android:layout_width="0dp" android:layout_height="0dp"/>
-        <Button android:id="@+id/btn_pagina_siguiente" android:layout_width="0dp" android:layout_height="0dp"/>
-        <TextView android:id="@+id/tv_pagina_actual" android:layout_width="0dp" android:layout_height="0dp"/>
+    <LinearLayout
+        android:id="@+id/layout_paginacion"
+        android:visibility="gone"
+        android:layout_width="0dp"
+        android:layout_height="0dp">
+
+        <Button
+            android:id="@+id/btn_pagina_anterior"
+            android:layout_width="0dp"
+            android:layout_height="0dp"/>
+
+        <Button
+            android:id="@+id/btn_pagina_siguiente"
+            android:layout_width="0dp"
+            android:layout_height="0dp"/>
+
+        <TextView
+            android:id="@+id/tv_pagina_actual"
+            android:layout_width="0dp"
+            android:layout_height="0dp"/>
     </LinearLayout>
 
 </LinearLayout>
