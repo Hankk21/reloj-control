@@ -179,7 +179,7 @@ public class MainAdminActivity extends AppCompatActivity {
         });
 
         cardJustificaciones.setOnClickListener(v -> {
-            Intent intent = new Intent(this, JustificadoresActivity.class);
+            Intent intent = new Intent(this, JustificacionesAdminActivity.class);
             startActivity(intent);
         });
 

@@ -260,36 +260,52 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
     }
 
     private void loadUsuarioData() {
-        Log.d(TAG, "Cargando datos del usuario: " + usuarioId);
+        Log.d(TAG, "Cargando datos del usuario ID numérico: " + usuarioId);
 
-        // Obtener datos del usuario desde Firebase
-        repository.mDatabase.child("usuarios").child(usuarioId)
+        // 1. Buscar en userMappings para traducir ID (int) -> UID (string)
+        repository.mDatabase.child("userMappings").child(usuarioId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            String realFirebaseUid = snapshot.getValue(String.class);
+                            // 2. Con el UID real, cargamos los datos
+                            cargarDatosReales(realFirebaseUid);
+                        } else {
+                            Toast.makeText(VisualizarUsuarioActivity.this, "Error: Usuario no encontrado en índices", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error buscando mapping", error.toException());
+                        Toast.makeText(VisualizarUsuarioActivity.this, "Error de conexión", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
+    }
+
+    private void cargarDatosReales(String firebaseUid) {
+        // Guardamos el UID real para usarlo en otras funciones (como eliminar)
+        // Nota: Define 'private String currentFirebaseUid;' al inicio de la clase
+        // currentFirebaseUid = firebaseUid;
+
+        repository.mDatabase.child("usuarios").child(firebaseUid)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                         if (dataSnapshot.exists()) {
                             usuario = dataSnapshot.getValue(Usuario.class);
                             if (usuario != null) {
-                                Log.d(TAG, "✓ Datos del usuario obtenidos");
                                 mostrarInformacionUsuario();
+                                // Ahora cargamos historiales usando el UID correcto si es necesario
                                 loadHistorialAsistencia();
                                 loadJustificaciones();
                             }
-                        } else {
-                            Log.w(TAG, "Usuario no encontrado");
-                            Toast.makeText(VisualizarUsuarioActivity.this,
-                                    "Usuario no encontrado", Toast.LENGTH_SHORT).show();
-                            finish();
                         }
                     }
-
                     @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "✗ Error cargando datos del usuario", error.toException());
-                        Toast.makeText(VisualizarUsuarioActivity.this,
-                                "Error cargando datos del usuario", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
+                    public void onCancelled(@NonNull DatabaseError error) { }
                 });
     }
 
