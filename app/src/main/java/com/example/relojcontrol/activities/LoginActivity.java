@@ -146,12 +146,9 @@ public class LoginActivity extends AppCompatActivity {
         ivLogo = findViewById(R.id.iv_logo);
         tilUsuario = findViewById(R.id.til_usuario);
         tilPassword = findViewById(R.id.til_password);
-        etUsuario = findViewById(R.id.et_usuario);
+        etUsuario = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.et_password);
-        tvForgotPassword = findViewById(R.id.tv_forgot_password);
-        tvErrorMessage = findViewById(R.id.tv_error_message);
-        btnLogin = findViewById(R.id.btn_login);
-        progressBar = findViewById(R.id.progress_bar);
+        btnLogin = findViewById(R.id.btnLogin);
 
         Log.d(TAG, "Views inicializadas correctamente");
     }

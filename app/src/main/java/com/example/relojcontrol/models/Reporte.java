@@ -21,7 +21,7 @@ public class Reporte {
     public int getIdUsuario() { return idUsuario; }
     public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
 
-    // METODO UTILITARIO (NUEVO)
+    // METODO UTILITARIO
     public String getTipoTexto() {
         switch (tipoReporte) {
             case 1: return "Asistencias";
