@@ -188,7 +188,7 @@ public class MainAdminActivity extends AppCompatActivity {
             Intent intent = new Intent(this, ReportesActivity.class);
             startActivity(intent);
         });
-        
+
         cardLicencias.setOnClickListener(v ->{
             Intent intent = new Intent(this, LicenciasAdminActivity.class);
             startActivity(intent);

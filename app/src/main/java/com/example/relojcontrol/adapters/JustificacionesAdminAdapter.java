@@ -30,7 +30,7 @@ public class JustificacionesAdminAdapter extends RecyclerView.Adapter<Justificac
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_licencia_admin, parent, false);
+                .inflate(R.layout.item_justificacion_admin, parent, false);
         return new ViewHolder(view);
     }
 
