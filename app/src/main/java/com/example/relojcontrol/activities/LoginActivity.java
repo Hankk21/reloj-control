@@ -161,9 +161,12 @@ public class LoginActivity extends AppCompatActivity {
     private void saveSession(Usuario usuario) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
+
         editor.putString("user_uid", mAuth.getCurrentUser().getUid());
         editor.putString("user_name", usuario.getNombre() + " " + usuario.getApellido());
         editor.putInt("user_role", usuario.getIdRol());
+        //guardado de id numerico para las consultas de asistencia
+        editor.putInt("user_id_num", usuario.getIdUsuario());
         editor.apply();
     }
 

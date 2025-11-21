@@ -1,6 +1,7 @@
 package com.example.relojcontrol.models;
 
 import com.google.firebase.database.PropertyName;
+import com.google.firebase.database.Exclude;
 import java.io.Serializable;
 
 public class Usuario implements Serializable {
@@ -34,7 +35,7 @@ public class Usuario implements Serializable {
 
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
-
+    @Exclude
     public String getNombreCompleto() { return nombre + " " + apellido; }
 
     public String getCorreo() { return correo; }
@@ -52,11 +53,12 @@ public class Usuario implements Serializable {
     public void setIdRol(int idRol) { this.idRol = idRol;}
 
     // Métodos helper
+    @Exclude
     public boolean isActivo() {
 
         return "activo".equalsIgnoreCase(estadoUsuario);
     }
-
+    @Exclude
     public String getRolTexto() {
 
         return idRol == 1 ? "Administrador" : "Empleado";

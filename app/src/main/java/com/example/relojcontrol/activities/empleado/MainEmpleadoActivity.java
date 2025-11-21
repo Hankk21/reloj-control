@@ -44,6 +44,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private String userId;
     private String userName;
+    private String userFirebaseUid;
 
     // Handler para actualizar la hora
     private Handler timeHandler = new Handler();
@@ -137,9 +138,15 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     }
 
     private void loadUserData() {
-        userId = sharedPreferences.getString("user_id", "");
-        userName = sharedPreferences.getString("user_name", "Usuario");
-        Log.d(TAG, "Datos de usuario cargados - ID: " + userId + ", Nombre: " + userName);
+        //recuperacion de id numerico guardado en login
+        int idNumerico = sharedPreferences.getInt("user_id_num", -1);
+        userId = String.valueOf(idNumerico);
+
+        //convertido en string
+        userFirebaseUid = sharedPreferences.getString("user_id_num", "");
+        userName = sharedPreferences.getString("user_name","Usuario");
+
+        Log.d(TAG, "Datos cargados -> ID Numerico para consultas: " + userId + "| UID Real: " + userFirebaseUid);
     }
 
     private void setupClickListeners() {
@@ -262,7 +269,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         // Determinar ID del tipo de acción
         int tipoAccionId = "entrada".equals(tipoAccion) ? 1 : 2;
 
-        repository.registrarAsistencia(userId, tipoAccionId, new FirebaseRepository.AsistenciaCallback() {
+        repository.registrarAsistencia(userFirebaseUid, tipoAccionId, new FirebaseRepository.AsistenciaCallback() {
             @Override
             public void onSuccess(Asistencia asistencia) {
                 Log.d(TAG, "✓ Asistencia registrada exitosamente");
