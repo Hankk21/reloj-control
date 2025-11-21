@@ -48,7 +48,7 @@ public class MainAdminActivity extends AppCompatActivity {
     private TextView tvJustificacionesPendientes;
 
     // Cards de navegación
-    private CardView cardUsuarios, cardJustificaciones, cardReportes;
+    private CardView cardUsuarios, cardJustificaciones, cardReportes, cardLicencias;
 
     // Data
     private FirebaseRepository repository;
@@ -93,6 +93,7 @@ public class MainAdminActivity extends AppCompatActivity {
         cardUsuarios = findViewById(R.id.card_usuarios);
         cardJustificaciones = findViewById(R.id.card_justificaciones);
         cardReportes = findViewById(R.id.card_reportes);
+        cardLicencias = findViewById(R.id.card_licencias);
 
         Log.d(TAG, "Views inicializadas");
     }
@@ -185,6 +186,11 @@ public class MainAdminActivity extends AppCompatActivity {
 
         cardReportes.setOnClickListener(v -> {
             Intent intent = new Intent(this, ReportesActivity.class);
+            startActivity(intent);
+        });
+        
+        cardLicencias.setOnClickListener(v ->{
+            Intent intent = new Intent(this, LicenciasAdminActivity.class);
             startActivity(intent);
         });
 

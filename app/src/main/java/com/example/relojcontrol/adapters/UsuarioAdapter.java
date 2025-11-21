@@ -77,7 +77,9 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
             }
 
             // Configurar estado
-            if (usuario.getEstadoUsuario().equals("Activo")) {
+            String estado = usuario.getEstadoUsuario();
+            // Usamos equalsIgnoreCase para que detecte "activo" o "Activo"
+            if (estado != null && estado.equalsIgnoreCase("activo")) {
                 tvEstado.setText("Activo");
                 tvEstado.setBackgroundResource(R.drawable.badge_estado_activo);
             } else {

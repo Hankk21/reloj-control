@@ -34,20 +34,33 @@ public class FirebaseRepository {
 
     // === USUARIOS ===
     public void crearUsuario(Usuario usuario, String password, CrudCallback callback) {
-        Log.d(TAG, "Creando usuario: " + usuario.getCorreo());
+        Log.d(TAG, "Iniciando creación robusta de usuario: " + usuario.getCorreo());
 
         mAuth.createUserWithEmailAndPassword(usuario.getCorreo(), password)
                 .addOnSuccessListener(authResult -> {
                     String firebaseUid = authResult.getUser().getUid();
 
+                    // 1. Obtener siguiente ID numérico
                     getNextId("usuarios", nextId -> {
                         usuario.setIdUsuario(nextId);
 
+                        // 2. Guardar datos del usuario
                         mDatabase.child("usuarios").child(firebaseUid).setValue(usuario)
                                 .addOnSuccessListener(aVoid -> {
-                                    mDatabase.child("userMappings").child(String.valueOf(nextId)).setValue(firebaseUid);
-                                    Log.d(TAG, "✓ Usuario creado - ID: " + nextId);
-                                    callback.onSuccess();
+
+                                    // 3. ¡PASO CRÍTICO! Guardar el Mapping ID -> UID
+                                    mDatabase.child("userMappings").child(String.valueOf(nextId))
+                                            .setValue(firebaseUid)
+                                            .addOnSuccessListener(aVoid2 -> {
+                                                Log.d(TAG, "✓ Usuario y Mapping creados correctamente. ID: " + nextId);
+                                                callback.onSuccess();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "Error creando mapping, revirtiendo usuario", e);
+                                                // Si falla el mapping, borramos el usuario para no dejar "zombies"
+                                                mDatabase.child("usuarios").child(firebaseUid).removeValue();
+                                                callback.onError(new Exception("Error de sincronización. Intente nuevamente."));
+                                            });
                                 })
                                 .addOnFailureListener(callback::onError);
                     });
