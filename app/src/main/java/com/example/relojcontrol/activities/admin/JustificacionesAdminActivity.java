@@ -113,11 +113,25 @@ public class JustificacionesAdminActivity extends AppCompatActivity {
     public void aprobarJustificacion(String justificacionId, int position) {
         if (justificacionId == null) return;
 
+        // VALIDACIÓN DE SEGURIDAD ANTI-CRASH
+        if (position < 0 || position >= listaJustificaciones.size()) {
+            Log.e(TAG, "Intento de borrar índice inválido: " + position);
+            //recargamostodo por si la lista se desincronizo
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        // Actualizar en Firebase
         justificacionesRef.child(justificacionId).child("id_estado").setValue(3) // 3 = Aprobado
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Justificación aprobada", Toast.LENGTH_SHORT).show();
-                    listaJustificaciones.remove(position);
-                    adapter.notifyItemRemoved(position);
+
+                    // Solo borramos si el índice sigue siendo válido
+                    if (position < listaJustificaciones.size()) {
+                        listaJustificaciones.remove(position);
+                        adapter.notifyItemRemoved(position);
+                        adapter.notifyItemRangeChanged(position, listaJustificaciones.size());
+                    }
 
                     if (listaJustificaciones.isEmpty()) {
                         showEmptyState(true);
@@ -132,11 +146,20 @@ public class JustificacionesAdminActivity extends AppCompatActivity {
     public void rechazarJustificacion(String justificacionId, int position) {
         if (justificacionId == null) return;
 
+        if (position < 0 || position >= listaJustificaciones.size()) {
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
         justificacionesRef.child(justificacionId).child("id_estado").setValue(4) // 4 = Rechazado
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Justificación rechazada", Toast.LENGTH_SHORT).show();
-                    listaJustificaciones.remove(position);
-                    adapter.notifyItemRemoved(position);
+
+                    if (position < listaJustificaciones.size()) {
+                        listaJustificaciones.remove(position);
+                        adapter.notifyItemRemoved(position);
+                        adapter.notifyItemRangeChanged(position, listaJustificaciones.size());
+                    }
 
                     if (listaJustificaciones.isEmpty()) {
                         showEmptyState(true);

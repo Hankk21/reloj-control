@@ -113,11 +113,27 @@ public class LicenciasAdminActivity extends AppCompatActivity {
     public void aprobarLicencia(String licenciaId, int position) {
         if (licenciaId == null) return;
 
+        //Validación de seguridad PREVIA
+        if (position < 0 || position >= listaLicencias.size()) {
+            Log.e(TAG, "Intento de borrar índice inválido en Licencias: " + position);
+            adapter.notifyDataSetChanged(); // Sincronizar visualmente por si acaso
+            return;
+        }
+
+        //Llamada a Firebase
         licenciasRef.child(licenciaId).child("id_estado").setValue(3) // 3 = Aprobado
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Licencia aprobada", Toast.LENGTH_SHORT).show();
-                    listaLicencias.remove(position);
-                    adapter.notifyItemRemoved(position);
+
+                    //Validación de seguridad
+                    if (position < listaLicencias.size()) {
+                        listaLicencias.remove(position);
+                        adapter.notifyItemRemoved(position);
+                        adapter.notifyItemRangeChanged(position, listaLicencias.size());
+                    } else {
+                        // Si la posición ya no es válida, refrescamos para evitar errores visuales
+                        adapter.notifyDataSetChanged();
+                    }
 
                     if (listaLicencias.isEmpty()) {
                         showEmptyState(true);
@@ -132,11 +148,25 @@ public class LicenciasAdminActivity extends AppCompatActivity {
     public void rechazarLicencia(String licenciaId, int position) {
         if (licenciaId == null) return;
 
+        // Validación de seguridad PREVIA
+        if (position < 0 || position >= listaLicencias.size()) {
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        // Llamada a Firebase
         licenciasRef.child(licenciaId).child("id_estado").setValue(4) // 4 = Rechazado
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Licencia rechazada", Toast.LENGTH_SHORT).show();
-                    listaLicencias.remove(position);
-                    adapter.notifyItemRemoved(position);
+
+                    // Validación de seguridad
+                    if (position < listaLicencias.size()) {
+                        listaLicencias.remove(position);
+                        adapter.notifyItemRemoved(position);
+                        adapter.notifyItemRangeChanged(position, listaLicencias.size());
+                    } else {
+                        adapter.notifyDataSetChanged();
+                    }
 
                     if (listaLicencias.isEmpty()) {
                         showEmptyState(true);
