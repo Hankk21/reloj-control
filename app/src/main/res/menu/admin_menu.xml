@@ -2,13 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Ícono de refresh visible en el Toolbar -->
-
     <!-- Opciones del menú desplegable (tres puntos) -->
     <item
-        android:id="@+id/action_profile"
-        android:title="Mi Perfil"
-        app:showAsAction="never" />
+        android:id="@+id/menu_usuarios"
+        android:title="Usuarios"
+        android:icon="@drawable/ic_person"
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/menu_cerrar_sesion"
