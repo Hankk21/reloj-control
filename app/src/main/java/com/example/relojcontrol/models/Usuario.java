@@ -35,8 +35,6 @@ public class Usuario implements Serializable {
 
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
-    @Exclude
-    public String getNombreCompleto() { return nombre + " " + apellido; }
 
     public String getCorreo() { return correo; }
     public void setCorreo(String correo) { this.correo = correo; }
@@ -55,13 +53,15 @@ public class Usuario implements Serializable {
     // Métodos helper
     @Exclude
     public boolean isActivo() {
-
         return "activo".equalsIgnoreCase(estadoUsuario);
     }
     @Exclude
     public String getRolTexto() {
-
         return idRol == 1 ? "Administrador" : "Empleado";
+    }
+    @Exclude
+    public String getNombreCompleto() {
+        return nombre + " " + apellido;
     }
 
 

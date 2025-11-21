@@ -59,8 +59,10 @@ public class MainEmpleadoActivity extends AppCompatActivity {
 
         initFirebase();
         initViews();
-        setupToolbar();
+
         loadUserData();
+
+        setupToolbar();
         setupClickListeners();
         startTimeUpdater();
         loadTodayAttendance();
@@ -143,7 +145,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         userId = String.valueOf(idNumerico);
 
         //convertido en string
-        userFirebaseUid = sharedPreferences.getString("user_id_num", "");
+        userFirebaseUid = sharedPreferences.getString("user_uid", "");
         userName = sharedPreferences.getString("user_name","Usuario");
 
         Log.d(TAG, "Datos cargados -> ID Numerico para consultas: " + userId + "| UID Real: " + userFirebaseUid);
@@ -183,7 +185,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     private void loadTodayAttendance() {
         Log.d(TAG, "Cargando asistencia del día");
 
-        repository.obtenerAsistenciaHoy(userId, new FirebaseRepository.DataCallback<List<Asistencia>>() {
+        repository.obtenerAsistenciaHoy(userFirebaseUid, new FirebaseRepository.DataCallback<List<Asistencia>>() {
             @Override
             public void onSuccess(List<Asistencia> asistencias) {
                 Log.d(TAG, "✓ Asistencia de hoy obtenida: " + asistencias.size() + " registros");
