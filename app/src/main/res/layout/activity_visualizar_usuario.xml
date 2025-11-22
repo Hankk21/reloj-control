@@ -19,7 +19,6 @@
             app:title="Perfil de Usuario"
             app:titleTextColor="@color/white"
             app:navigationIcon="@drawable/ic_back"
-            app:menu="@menu/visualizar_usuario_menu"
             android:elevation="4dp"/>
 
         <LinearLayout
