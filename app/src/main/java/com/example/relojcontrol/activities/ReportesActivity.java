@@ -2,14 +2,23 @@ package com.example.relojcontrol.activities;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.os.Environment;
+import android.provider.MediaStore;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -405,32 +414,56 @@ public class ReportesActivity extends AppCompatActivity {
         }
 
         StringBuilder csvData = new StringBuilder();
-        csvData.append("Fecha,Cantidad Asistencias\n");
+        csvData.append("Reporte de Asistencia\n");
+        csvData.append("Fecha,Cantidad\n");
 
-        // Extraemos los datos que ya tiene el gráfico
-        // Ejemplo simple iterando lo que mostramos:
-        csvData.append("Total Asistencias,").append(tvStat1Value.getText()).append("\n");
-        csvData.append("Total Atrasos,").append(tvStat2Value.getText()).append("\n");
+        // (Aquí va tu lógica para llenar el StringBuilder con tus datos reales)
+        csvData.append("Asistencia,").append(tvStat1Value.getText()).append("\n");
+        csvData.append("Atrasos,").append(tvStat2Value.getText()).append("\n");
         csvData.append("Ausencias,").append(tvStat3Value.getText()).append("\n");
 
-        try {
-            // Crear archivo temporal
-            java.io.File file = new java.io.File(getExternalCacheDir(), "reporte_asistencia.csv");
-            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
-            fos.write(csvData.toString().getBytes());
-            fos.close();
+        String nombreArchivo = "Reporte_" + System.currentTimeMillis() + ".csv";
 
-            // Compartir archivo
-            Uri uri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/csv");
-            intent.putExtra(Intent.EXTRA_STREAM, uri);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(Intent.createChooser(intent, "Exportar reporte con..."));
+        try {
+            // VERIFICACIÓN DE VERSIÓN DE ANDROID
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // === OPCIÓN A: Para Android 10 (API 29) o superior ===
+                // Usamos MediaStore (La forma moderna y limpia)
+
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, nombreArchivo);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RelojControl");
+
+                ContentResolver resolver = getContentResolver();
+                Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+                if (uri != null) {
+                    OutputStream outputStream = resolver.openOutputStream(uri);
+                    if (outputStream != null) {
+                        outputStream.write(csvData.toString().getBytes());
+                        outputStream.close();
+                        Toast.makeText(this, "Guardado en Descargas/RelojControl", Toast.LENGTH_LONG).show();
+                    }
+                }
+
+            } else {
+                // === OPCIÓN B: Para Android 9 (API 28) o inferior ===
+                // Usamos la forma clásica con File (Requiere permiso de escritura)
+
+                File directorio = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File file = new File(directorio, nombreArchivo);
+
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(csvData.toString().getBytes());
+                fos.close();
+
+                Toast.makeText(this, "Guardado en: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error exportando", e);
-            Toast.makeText(this, "Error al generar archivo", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error exportando archivo", e);
+            Toast.makeText(this, "Error al exportar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
