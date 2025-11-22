@@ -55,8 +55,6 @@ public class AsistenciaAdapter extends RecyclerView.Adapter<AsistenciaAdapter.Vi
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Ajusta estos IDs según tu XML de item (item_asistencia_historial.xml)
-            // Si no tienes el XML, avísame y te paso uno genérico.
             tvFecha = itemView.findViewById(R.id.tv_fecha_asistencia);
             tvHora = itemView.findViewById(R.id.tv_hora_asistencia);
             tvTipo = itemView.findViewById(R.id.tv_tipo_accion);

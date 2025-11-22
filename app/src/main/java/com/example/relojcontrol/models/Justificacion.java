@@ -1,6 +1,7 @@
 package com.example.relojcontrol.models;
 
 import com.google.firebase.database.PropertyName;
+import com.google.firebase.database.Exclude;
 import java.io.Serializable;
 
 public class Justificacion implements Serializable {
@@ -89,7 +90,7 @@ public class Justificacion implements Serializable {
     public boolean tieneDocumento() {
         return urlDocumento != null && !urlDocumento.isEmpty();
     }
-
+    @Exclude
     public String getEstadoTexto() {
         switch (idEstado) {
             case 1: return "Registrado";
@@ -99,7 +100,7 @@ public class Justificacion implements Serializable {
             default: return "Desconocido";
         }
     }
-
+    @Exclude
     public String getInfoUsuario() {
         if (nombreUsuario != null && rutUsuario != null) {
             return nombreUsuario + " (" + rutUsuario + ")";
