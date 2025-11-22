@@ -41,6 +41,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -66,7 +67,7 @@ public class JustificadoresActivity extends AppCompatActivity {
     // Firebase y datos
     private DatabaseReference databaseRef;
     private SharedPreferences sharedPreferences;
-    private int idUsuarioActual;
+    private int idUsuarioActual; // El ID numérico (ej: 2, 3)
 
     // Adapters para historial
     private JustificacionesAdapter justificacionesAdapter;
@@ -82,21 +83,62 @@ public class JustificadoresActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_justificadores);
 
+        // 1. Inicializar Firebase y Preferencias
+        databaseRef = FirebaseDatabase.getInstance().getReference();
+        sharedPreferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
+
+        // 2. Cargar ID del Usuario
+        loadUserData();
+
         initViews();
         setupToolbar();
         setupSpinner();
         setupDatePickers();
         setupFileSelector();
         setupListeners();
+
+        // 3. Cargar UI inicial
         actualizarFormulario();
-        cargarHistorial();
+
+        // 4. Verificar Modo (Historial Unificado o Individual)
+        checkIntentMode();
+    }
+
+    private void loadUserData() {
+        // Recuperamos el ID numérico (1, 2, 3...) guardado en LoginActivity
+        idUsuarioActual = sharedPreferences.getInt("user_id_num", -1);
+
+        Log.d(TAG, "Usuario cargado ID: " + idUsuarioActual);
+
+        if (idUsuarioActual == -1) {
+            Toast.makeText(this, "Error de sesión: Usuario no identificado", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void checkIntentMode() {
+        String tipoIntent = getIntent().getStringExtra("tipo");
+        if ("historial".equals(tipoIntent)) {
+            // Si viene de "Mi Historial", mostramos Justificaciones por defecto
+            cargarHistorial();
+        } else if (tipoIntent != null) {
+            // Si viene con tipo específico, seteamos el spinner
+            if ("Licencias".equals(tipoIntent)) {
+                spinnerTipo.setText("Licencias", false);
+                tipoSeleccionado = "Licencias";
+            }
+            actualizarFormulario();
+            cargarHistorial();
+        } else {
+            cargarHistorial();
+        }
     }
 
     private void initViews() {
-        // Spinner de tipo
+        // Spinner
         spinnerTipo = findViewById(R.id.spinner_tipo);
 
-        // TextInputLayouts
+        // Layouts
         tilMotivo = findViewById(R.id.til_motivo);
         tilDescripcion = findViewById(R.id.til_descripcion);
         tilFechaJustificar = findViewById(R.id.til_fecha_justificar);
@@ -110,27 +152,18 @@ public class JustificadoresActivity extends AppCompatActivity {
         etFechaInicio = findViewById(R.id.et_fecha_inicio);
         etFechaFin = findViewById(R.id.et_fecha_fin);
 
-        // Botones
+        // Botones y Listas
         btnAdjuntar = findViewById(R.id.btn_adjuntar);
         btnEnviar = findViewById(R.id.btn_enviar);
-
-        // RecyclerViews
         rvArchivosAdjuntos = findViewById(R.id.rv_archivos_adjuntos);
         rvHistorial = findViewById(R.id.rv_historial);
+        rvHistorial.setLayoutManager(new LinearLayoutManager(this)); // Configurar LayoutManager aquí
 
-        // TextViews
         tvHistorialTitle = findViewById(R.id.tv_historial_title);
         tvNoHistorial = findViewById(R.id.tv_no_historial);
-
-        // ImageView
         ivRefreshHistorial = findViewById(R.id.iv_refresh_historial);
 
-        // Inicializar Firebase y SharedPreferences
-        databaseRef = FirebaseDatabase.getInstance().getReference();
-        sharedPreferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
-        idUsuarioActual = sharedPreferences.getInt("USER_ID", 0);
-
-        // Inicializar listas
+        // Listas
         listaJustificaciones = new ArrayList<>();
         listaLicencias = new ArrayList<>();
     }
@@ -140,7 +173,7 @@ public class JustificadoresActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Justificaciones y Licencias");
+            getSupportActionBar().setTitle("Solicitudes");
         }
     }
 
@@ -149,7 +182,10 @@ public class JustificadoresActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_dropdown_item_1line, tipos);
         spinnerTipo.setAdapter(adapter);
-        spinnerTipo.setText("Justificaciones", false);
+        // No setear texto aquí si ya lo hace checkIntentMode, o dejar default
+        if (spinnerTipo.getText().toString().isEmpty()) {
+            spinnerTipo.setText("Justificaciones", false);
+        }
 
         spinnerTipo.setOnItemClickListener((parent, view, position, id) -> {
             tipoSeleccionado = tipos[position];
@@ -159,13 +195,8 @@ public class JustificadoresActivity extends AppCompatActivity {
     }
 
     private void setupDatePickers() {
-        // DatePicker para fecha a justificar
         etFechaJustificar.setOnClickListener(v -> mostrarDatePicker(etFechaJustificar));
-
-        // DatePicker para fecha inicio
         etFechaInicio.setOnClickListener(v -> mostrarDatePicker(etFechaInicio));
-
-        // DatePicker para fecha fin
         etFechaFin.setOnClickListener(v -> mostrarDatePicker(etFechaFin));
     }
 
@@ -181,7 +212,6 @@ public class JustificadoresActivity extends AppCompatActivity {
                             selectedYear, selectedMonth + 1, selectedDay);
                     editText.setText(fecha);
                 }, year, month, day);
-
         datePickerDialog.show();
     }
 
@@ -201,10 +231,8 @@ public class JustificadoresActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Botón adjuntar archivo
         btnAdjuntar.setOnClickListener(v -> seleccionarArchivo());
 
-        // Botón enviar
         btnEnviar.setOnClickListener(v -> {
             if (tipoSeleccionado.equals("Justificaciones")) {
                 enviarJustificacion();
@@ -213,171 +241,138 @@ public class JustificadoresActivity extends AppCompatActivity {
             }
         });
 
-        // Refresh historial
         ivRefreshHistorial.setOnClickListener(v -> cargarHistorial());
     }
 
     private void actualizarFormulario() {
         if (tipoSeleccionado.equals("Justificaciones")) {
-            // Mostrar campos de justificación
             tilDescripcion.setVisibility(View.VISIBLE);
             tilFechaJustificar.setVisibility(View.VISIBLE);
-
-            // Ocultar campos de licencia
             tilFechaInicio.setVisibility(View.GONE);
             tilFechaFin.setVisibility(View.GONE);
         } else {
-            // Ocultar campos de justificación
             tilDescripcion.setVisibility(View.GONE);
             tilFechaJustificar.setVisibility(View.GONE);
-
-            // Mostrar campos de licencia
             tilFechaInicio.setVisibility(View.VISIBLE);
             tilFechaFin.setVisibility(View.VISIBLE);
         }
-
-        limpiarFormulario();
+        // Opcional: limpiarFormulario() si queremos borrar al cambiar de pestaña
     }
 
     private void seleccionarArchivo() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("application/pdf");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-
         try {
-            seleccionarArchivoLauncher.launch(
-                    Intent.createChooser(intent, "Seleccionar archivo PDF")
-            );
+            seleccionarArchivoLauncher.launch(Intent.createChooser(intent, "Seleccionar PDF"));
         } catch (Exception e) {
-            Toast.makeText(this, "Error al abrir selector de archivos", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error al abrir selector", Toast.LENGTH_SHORT).show();
         }
     }
 
     private String obtenerNombreArchivo(Uri uri) {
         String nombre = "archivo.pdf";
         Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-
         if (cursor != null && cursor.moveToFirst()) {
             int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-            if (nameIndex != -1) {
-                nombre = cursor.getString(nameIndex);
-            }
+            if (nameIndex != -1) nombre = cursor.getString(nameIndex);
             cursor.close();
         }
-
         return nombre;
     }
 
     private void enviarJustificacion() {
-        if (!validarFormulario()) {
-            return;
-        }
+        if (!validarFormulario()) return;
 
-        // Crear objeto Justificacion
         Justificacion justificacion = new Justificacion();
         justificacion.setMotivo(etMotivo.getText().toString().trim());
         justificacion.setDescripcion(etDescripcion.getText().toString().trim());
         justificacion.setFechaJustificar(etFechaJustificar.getText().toString().trim());
         justificacion.setFechaCreacion(obtenerFechaActual());
+
+        // Asignar ID del usuario actual
         justificacion.setIdUsuario(idUsuarioActual);
-        justificacion.setIdEstado(2); // 2 = Pendiente
+
+        justificacion.setIdEstado(2); // Pendiente
         justificacion.setUrlDocumento(archivoSeleccionado != null ? archivoSeleccionado.toString() : "");
 
-        // Guardar en Firebase
-        DatabaseReference justificacionesRef = databaseRef.child("justificaciones");
-        String key = justificacionesRef.push().getKey();
+        DatabaseReference ref = databaseRef.child("justificaciones");
+        String key = ref.push().getKey();
 
         if (key != null) {
-            justificacionesRef.child(key).setValue(justificacion)
+            ref.child(key).setValue(justificacion)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Justificación enviada correctamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show();
                         limpiarFormulario();
                         cargarHistorial();
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Error al enviar justificación", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error", e);
+                        Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error envio", e);
                     });
         }
     }
 
     private void enviarLicencia() {
-        if (!validarFormulario()) {
-            return;
-        }
+        if (!validarFormulario()) return;
 
-        // Crear objeto Licencia
         Licencia licencia = new Licencia();
         licencia.setMotivo(etMotivo.getText().toString().trim());
         licencia.setFechaInicio(etFechaInicio.getText().toString().trim());
         licencia.setFechaFin(etFechaFin.getText().toString().trim());
         licencia.setFechaCreacion(obtenerFechaActual());
+
+        // Asignar ID del usuario actual
         licencia.setIdUsuario(idUsuarioActual);
-        licencia.setIdEstado(2); // 2 = Pendiente
+
+        licencia.setIdEstado(2); // Pendiente
         licencia.setUrlDocumento(archivoSeleccionado != null ? archivoSeleccionado.toString() : "");
 
-        // Guardar en Firebase
-        DatabaseReference licenciasRef = databaseRef.child("licencias");
-        String key = licenciasRef.push().getKey();
+        DatabaseReference ref = databaseRef.child("licencias");
+        String key = ref.push().getKey();
 
         if (key != null) {
-            licenciasRef.child(key).setValue(licencia)
+            ref.child(key).setValue(licencia)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Licencia enviada correctamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show();
                         limpiarFormulario();
                         cargarHistorial();
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Error al enviar licencia", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error", e);
+                        Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error envio", e);
                     });
         }
     }
 
     private boolean validarFormulario() {
         boolean esValido = true;
-
-        // Validar motivo
         if (etMotivo.getText().toString().trim().isEmpty()) {
-            tilMotivo.setError("Este campo es requerido");
+            tilMotivo.setError("Requerido");
             esValido = false;
         } else {
             tilMotivo.setError(null);
         }
 
         if (tipoSeleccionado.equals("Justificaciones")) {
-            // Validar descripción para justificaciones
             if (etDescripcion.getText().toString().trim().isEmpty()) {
-                tilDescripcion.setError("Este campo es requerido");
+                tilDescripcion.setError("Requerido");
                 esValido = false;
-            } else {
-                tilDescripcion.setError(null);
             }
-
-            // Validar fecha a justificar
             if (etFechaJustificar.getText().toString().trim().isEmpty()) {
-                tilFechaJustificar.setError("Seleccione una fecha");
+                tilFechaJustificar.setError("Requerido");
                 esValido = false;
-            } else {
-                tilFechaJustificar.setError(null);
             }
         } else {
-            // Validar fechas para licencias
             if (etFechaInicio.getText().toString().trim().isEmpty()) {
-                tilFechaInicio.setError("Seleccione fecha de inicio");
+                tilFechaInicio.setError("Requerido");
                 esValido = false;
-            } else {
-                tilFechaInicio.setError(null);
             }
-
             if (etFechaFin.getText().toString().trim().isEmpty()) {
-                tilFechaFin.setError("Seleccione fecha de fin");
+                tilFechaFin.setError("Requerido");
                 esValido = false;
-            } else {
-                tilFechaFin.setError(null);
             }
         }
-
         return esValido;
     }
 
@@ -391,23 +386,24 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void cargarHistorialJustificaciones() {
         tvHistorialTitle.setText("Historial de Justificaciones");
+        DatabaseReference ref = databaseRef.child("justificaciones");
 
-        DatabaseReference justificacionesRef = databaseRef.child("justificaciones");
-
-        justificacionesRef.orderByChild("id_usuario").equalTo(idUsuarioActual)
+        // Filtrar por 'id_usuario' (usando el ID numérico)
+        ref.orderByChild("id_usuario").equalTo(idUsuarioActual)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         listaJustificaciones.clear();
-
                         if (snapshot.exists()) {
                             for (DataSnapshot data : snapshot.getChildren()) {
-                                Justificacion justificacion = data.getValue(Justificacion.class);
-                                if (justificacion != null) {
-                                    justificacion.setId(data.getKey());
-                                    listaJustificaciones.add(justificacion);
+                                Justificacion j = data.getValue(Justificacion.class);
+                                if (j != null) {
+                                    j.setId(data.getKey());
+                                    listaJustificaciones.add(j);
                                 }
                             }
+                            // Ordenar: más reciente primero
+                            Collections.reverse(listaJustificaciones);
 
                             mostrarHistorialJustificaciones();
                             tvNoHistorial.setVisibility(View.GONE);
@@ -420,32 +416,30 @@ public class JustificadoresActivity extends AppCompatActivity {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(JustificadoresActivity.this,
-                                "Error al cargar historial", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error: " + error.getMessage());
+                        Log.e(TAG, "Error cargar historial", error.toException());
                     }
                 });
     }
 
     private void cargarHistorialLicencias() {
         tvHistorialTitle.setText("Historial de Licencias");
+        DatabaseReference ref = databaseRef.child("licencias");
 
-        DatabaseReference licenciasRef = databaseRef.child("licencias");
-
-        licenciasRef.orderByChild("id_usuario").equalTo(idUsuarioActual)
+        // CORRECCIÓN: Filtrar por 'id_usuario'
+        ref.orderByChild("id_usuario").equalTo(idUsuarioActual)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         listaLicencias.clear();
-
                         if (snapshot.exists()) {
                             for (DataSnapshot data : snapshot.getChildren()) {
-                                Licencia licencia = data.getValue(Licencia.class);
-                                if (licencia != null) {
-                                    licencia.setId(data.getKey());
-                                    listaLicencias.add(licencia);
+                                Licencia l = data.getValue(Licencia.class);
+                                if (l != null) {
+                                    l.setId(data.getKey());
+                                    listaLicencias.add(l);
                                 }
                             }
+                            Collections.reverse(listaLicencias);
 
                             mostrarHistorialLicencias();
                             tvNoHistorial.setVisibility(View.GONE);
@@ -458,36 +452,23 @@ public class JustificadoresActivity extends AppCompatActivity {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(JustificadoresActivity.this,
-                                "Error al cargar historial", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error: " + error.getMessage());
+                        Log.e(TAG, "Error cargar historial", error.toException());
                     }
                 });
     }
 
     private void mostrarHistorialJustificaciones() {
-        if (justificacionesAdapter == null) {
-            justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones,this);
-            rvHistorial.setLayoutManager(new LinearLayoutManager(this));
-            rvHistorial.setAdapter(justificacionesAdapter);
-        } else {
-            justificacionesAdapter.notifyDataSetChanged();
-        }
+        justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones, this);
+        rvHistorial.setAdapter(justificacionesAdapter);
     }
 
     private void mostrarHistorialLicencias() {
-        if (licenciasAdapter == null) {
-            licenciasAdapter = new LicenciasAdapter(listaLicencias, this);
-            rvHistorial.setLayoutManager(new LinearLayoutManager(this));
-            rvHistorial.setAdapter(licenciasAdapter);
-        } else {
-            licenciasAdapter.notifyDataSetChanged();
-        }
+        licenciasAdapter = new LicenciasAdapter(listaLicencias, this);
+        rvHistorial.setAdapter(licenciasAdapter);
     }
 
     private String obtenerFechaActual() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        return sdf.format(new Date());
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
     }
 
     private void limpiarFormulario() {
@@ -500,12 +481,14 @@ public class JustificadoresActivity extends AppCompatActivity {
         btnAdjuntar.setText("Adjuntar archivo PDF (máx. 5 MB)");
         btnAdjuntar.setIconResource(R.drawable.ic_attach_file);
 
-        // Resetear errores
         tilMotivo.setError(null);
         tilDescripcion.setError(null);
         tilFechaJustificar.setError(null);
         tilFechaInicio.setError(null);
         tilFechaFin.setError(null);
+
+        // Quitar focus
+        etMotivo.clearFocus();
     }
 
     @Override
