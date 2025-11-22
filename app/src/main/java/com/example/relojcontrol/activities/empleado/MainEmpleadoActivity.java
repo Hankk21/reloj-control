@@ -13,40 +13,52 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-
-import com.example.relojcontrol.activities.JustificadoresActivity;
-import com.example.relojcontrol.activities.LoginActivity;
-import com.google.android.material.button.MaterialButton;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.relojcontrol.R;
+import com.example.relojcontrol.activities.JustificadoresActivity;
+import com.example.relojcontrol.activities.LoginActivity;
+import com.example.relojcontrol.adapters.AsistenciaAdapter;
 import com.example.relojcontrol.models.Asistencia;
 import com.example.relojcontrol.network.FirebaseRepository;
+import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.ArrayList;
 
 public class MainEmpleadoActivity extends AppCompatActivity {
 
     private static final String TAG = "MainEmpleadoActivity";
     private static final String PREFS_NAME = "RelojControl";
 
-    // Views del XML
+    /// Views
     private Toolbar toolbar;
     private TextView tvCurrentTime, tvCurrentDate;
     private MaterialButton btnEntrada, btnSalida;
     private TextView tvConfirmationMessage;
+
+    // Vistas "ocultas" (para evitar crash por referencias antiguas)
     private TextView tvEntradaTime, tvSalidaTime, tvEntradaStatus, tvSalidaStatus;
+
+    // Vistas Nuevas (Lista)
+    private RecyclerView rvHistorial;
+    private TextView tvNoHistorial;
+    private AsistenciaAdapter adapter;
 
     // Data
     private FirebaseRepository repository;
     private SharedPreferences sharedPreferences;
-    private String userId;
+    private String userId; // ID Numérico (Visual)
+    private String userFirebaseUid; // UID Real (Firebase)
     private String userName;
-    private String userFirebaseUid;
 
-    // Handler para actualizar la hora
+    // Reloj
     private Handler timeHandler = new Handler();
     private Runnable timeRunnable;
 
@@ -75,7 +87,6 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        // IDs exactos XML
         toolbar = findViewById(R.id.toolbar);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvCurrentDate = findViewById(R.id.tv_current_date);
@@ -83,22 +94,201 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         btnSalida = findViewById(R.id.btn_salida);
         tvConfirmationMessage = findViewById(R.id.tv_confirmation_message);
 
-        // Historial del día
+        // Variables de texto antiguas (Defensa contra null)
         tvEntradaTime = findViewById(R.id.tv_entrada_time);
         tvSalidaTime = findViewById(R.id.tv_salida_time);
         tvEntradaStatus = findViewById(R.id.tv_entrada_status);
         tvSalidaStatus = findViewById(R.id.tv_salida_status);
 
+        // Vistas nuevas
+        rvHistorial = findViewById(R.id.rv_historial_asistencia);
+        tvNoHistorial = findViewById(R.id.tv_no_historial_asistencia);
+
+        // Configuración segura del RecyclerView
+        if (rvHistorial != null) {
+            rvHistorial.setLayoutManager(new LinearLayoutManager(this));
+        } else {
+            Log.e(TAG, "CRÍTICO: No se encontró rv_historial_asistencia en el XML");
+        }
+
         Log.d(TAG, "Views inicializadas");
     }
 
+    private void loadUserData() {
+        //recuperacion de id numerico guardado en login
+        int idNumerico = sharedPreferences.getInt("user_id_num", -1);
+        userId = String.valueOf(idNumerico);
+
+        //convertido en string
+        userFirebaseUid = sharedPreferences.getString("user_uid", "");
+        userName = sharedPreferences.getString("user_name","Usuario");
+
+        Log.d(TAG, "Datos cargados -> ID Numerico para consultas: " + userId + "| UID Real: " + userFirebaseUid);
+    }
+
+    private void startTimeUpdater() {
+        timeRunnable = new Runnable() {
+            @Override
+            public void run() {
+                updateDateTime();
+                timeHandler.postDelayed(this, 1000); // Actualizar cada segundo
+            }
+        };
+        timeHandler.post(timeRunnable);
+    }
+
+    private void updateDateTime() {
+        Date now = new Date();
+
+        // Formato para la hora (08:30 AM)
+        String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now);
+        if (tvCurrentTime != null) tvCurrentTime.setText(time);
+
+        // Formato para la fecha (Lunes, 18 de Septiembre 2025)
+        String date = new SimpleDateFormat("EEEE, d 'de' MMMM yyyy",
+                new Locale("es", "CL")).format(now);
+        if (tvCurrentDate != null) tvCurrentDate.setText(time);
+    }
+
+    private void setupClickListeners() {
+        btnEntrada.setOnClickListener(v -> registrarAsistencia("entrada"));
+        btnSalida.setOnClickListener(v -> registrarAsistencia("salida"));
+
+        Log.d(TAG, "Click listeners configurados");
+    }
+
+    private void loadTodayAttendance() {
+        Log.d(TAG, "Cargando asistencia del día");
+
+        repository.obtenerAsistenciaHoy(userFirebaseUid, new FirebaseRepository.DataCallback<List<Asistencia>>() {
+            @Override
+            public void onSuccess(List<Asistencia> asistencias) {
+                Log.d(TAG, "✓ Asistencia de hoy obtenida: " + asistencias.size() + " registros");
+
+                // Procesar asistencias del día
+                boolean hasEntrada = false;
+                boolean hasSalida = false;
+
+                for (Asistencia a : asistencias) {
+                    if (a.getIdTipoAccion() == 1) hasEntrada = true;
+                    if (a.getIdTipoAccion() == 2) hasSalida = true;
+                }
+                updateButtonStates(hasEntrada, hasSalida);
+
+                // actualizar lista visual
+                if (asistencias.isEmpty()) {
+                    if (rvHistorial != null) rvHistorial.setVisibility(View.GONE);
+                    if (tvNoHistorial != null) tvNoHistorial.setVisibility(View.VISIBLE);
+                } else {
+                    if (rvHistorial != null) rvHistorial.setVisibility(View.VISIBLE);
+                    if (tvNoHistorial != null) tvNoHistorial.setVisibility(View.GONE);
+                    Collections.reverse(asistencias);
+
+                    adapter = new AsistenciaAdapter(asistencias);
+                    if (rvHistorial != null) rvHistorial.setAdapter(adapter);
+                }
+
+                //Actualizar Textos Ocultos (Para evitar crashes si algo los busca)
+                if (tvEntradaStatus != null) tvEntradaStatus.setText(hasEntrada ? "OK" : "-");
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Log.e(TAG, "Error cargando lista", error);
+                // En caso de error, habilitamos entrada por seguridad
+                btnEntrada.setEnabled(true);
+            }
+        });
+    }
+
+    private String formatTime(String time24) {
+        try {
+            SimpleDateFormat input = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat output = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+            Date date = input.parse(time24);
+            return output.format(date);
+        } catch (Exception e) {
+            return time24; // Devolver original si hay error
+        }
+    }
+
+    private void updateButtonStates(boolean hasEntrada, boolean hasSalida) {
+        if (!hasEntrada) {
+            // Sin entrada: habilitar solo entrada
+            btnEntrada.setEnabled(true);
+            btnSalida.setEnabled(false);
+            btnSalida.setAlpha(0.5f); // Efecto visual deshabilitado
+            btnEntrada.setAlpha(1.0f);
+        } else if (!hasSalida) {
+            // Con entrada pero sin salida: habilitar solo salida
+            btnEntrada.setEnabled(false);
+            btnSalida.setAlpha(0.5f);
+            btnSalida.setEnabled(true);
+            btnEntrada.setAlpha(1.0f);
+        } else {
+            // Con entrada y salida: deshabilitar ambos
+            btnEntrada.setEnabled(false);
+            btnSalida.setEnabled(false);
+            btnEntrada.setAlpha(0.5f);
+            btnSalida.setAlpha(0.5f);
+        }
+
+        Log.d(TAG, "Botones actualizados - Entrada: " + hasEntrada + ", Salida: " + hasSalida);
+    }
+
+    private void registrarAsistencia(String tipoAccion) {
+        Log.d(TAG, "=== REGISTRANDO ASISTENCIA ===");
+        Log.d(TAG, "Tipo: " + tipoAccion + ", Usuario: " + userId);
+
+        // Deshabilitar botones para evitar doble clic
+        btnEntrada.setEnabled(false);
+        btnSalida.setEnabled(false);
+
+        // 1 = Entrada, 2 = Salida
+        int tipoAccionId = "entrada".equals(tipoAccion) ? 1 : 2;
+
+        repository.registrarAsistencia(userFirebaseUid, tipoAccionId, new FirebaseRepository.AsistenciaCallback() {
+            @Override
+            public void onSuccess(Asistencia asistencia) {
+                Log.d(TAG, "✓ Asistencia registrada exitosamente");
+
+                runOnUiThread(() -> {
+                    showConfirmationMessage("Marca registrada correctamente", true);
+                    loadTodayAttendance(); // Recargar lista
+                });
+            }
+
+            @Override
+            public void onError(Exception error) {
+                Log.e(TAG, "Error registro", error);
+
+                runOnUiThread(() -> {
+                    showConfirmationMessage("Error: " + error.getMessage(), false);
+                    loadTodayAttendance(); // Reactivar botones
+                });
+            }
+        });
+    }
+
+    private void showConfirmationMessage(String message, boolean isSuccess) {
+        tvConfirmationMessage.setText(message);
+        tvConfirmationMessage.setVisibility(View.VISIBLE);
+        tvConfirmationMessage.setBackgroundColor(isSuccess ? getColor(R.color.success_light)
+                : getColor(R.color.error_light));
+        tvConfirmationMessage.setTextColor(isSuccess ? getColor(R.color.success_text)
+                : getColor(R.color.error_text));
+
+        // Ocultar el mensaje después de 4 segundos
+        timeHandler.postDelayed(() -> tvConfirmationMessage.setVisibility(View.GONE), 4000);
+    }
+    // configuracion de toolbar
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Registro de Asistencia");
+            getSupportActionBar().setTitle("Mi Asistencia");
         }
     }
-    // configuracion de toolbar
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.empleado_menu, menu);
@@ -128,6 +318,8 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         } else if (id == R.id.menu_cerrar_sesion) {
             SharedPreferences preferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
             preferences.edit().clear().apply();
+            FirebaseAuth.getInstance().signOut();
+
             Intent intent = new Intent(this, LoginActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -137,197 +329,6 @@ public class MainEmpleadoActivity extends AppCompatActivity {
             return super.onOptionsItemSelected(item);
         }
         return false;
-    }
-
-    private void loadUserData() {
-        //recuperacion de id numerico guardado en login
-        int idNumerico = sharedPreferences.getInt("user_id_num", -1);
-        userId = String.valueOf(idNumerico);
-
-        //convertido en string
-        userFirebaseUid = sharedPreferences.getString("user_uid", "");
-        userName = sharedPreferences.getString("user_name","Usuario");
-
-        Log.d(TAG, "Datos cargados -> ID Numerico para consultas: " + userId + "| UID Real: " + userFirebaseUid);
-    }
-
-    private void setupClickListeners() {
-        btnEntrada.setOnClickListener(v -> registrarAsistencia("entrada"));
-        btnSalida.setOnClickListener(v -> registrarAsistencia("salida"));
-
-        Log.d(TAG, "Click listeners configurados");
-    }
-
-    private void startTimeUpdater() {
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                updateDateTime();
-                timeHandler.postDelayed(this, 1000); // Actualizar cada segundo
-            }
-        };
-        timeHandler.post(timeRunnable);
-    }
-
-    private void updateDateTime() {
-        Date now = new Date();
-
-        // Formato para la hora (08:32 AM)
-        String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now);
-        tvCurrentTime.setText(time);
-
-        // Formato para la fecha (Lunes, 18 de Septiembre 2025)
-        String date = new SimpleDateFormat("EEEE, d 'de' MMMM yyyy",
-                new Locale("es", "CL")).format(now);
-        tvCurrentDate.setText(date);
-    }
-
-    private void loadTodayAttendance() {
-        Log.d(TAG, "Cargando asistencia del día");
-
-        repository.obtenerAsistenciaHoy(userFirebaseUid, new FirebaseRepository.DataCallback<List<Asistencia>>() {
-            @Override
-            public void onSuccess(List<Asistencia> asistencias) {
-                Log.d(TAG, "✓ Asistencia de hoy obtenida: " + asistencias.size() + " registros");
-
-                // Resetear valores por defecto
-                tvEntradaTime.setText("Pendiente");
-                tvSalidaTime.setText("Pendiente");
-                tvEntradaStatus.setText("—");
-                tvSalidaStatus.setText("—");
-
-                // Procesar asistencias del día
-                boolean hasEntrada = false, hasSalida = false;
-
-                for (Asistencia asistencia : asistencias) {
-                    int tipoAccionId = asistencia.getIdTipoAccion();
-
-                    if (tipoAccionId == 1 && !hasEntrada) { // 1 = entrada
-                        tvEntradaTime.setText(formatTime(asistencia.getHora()));
-                        tvEntradaStatus.setText("✓");
-                        hasEntrada = true;
-                    } else if (tipoAccionId == 2 && !hasSalida) { // 2 = salida
-                        tvSalidaTime.setText(formatTime(asistencia.getHora()));
-                        tvSalidaStatus.setText("✓");
-                        hasSalida = true;
-                    }
-                }
-
-                // Actualizar estado de botones
-                updateButtonStates(hasEntrada, hasSalida);
-            }
-
-            @Override
-            public void onError(Exception error) {
-                Log.e(TAG, "✗ Error cargando asistencia de hoy", error);
-                Toast.makeText(MainEmpleadoActivity.this,
-                        "Error cargando datos de hoy", Toast.LENGTH_SHORT).show();
-
-                // Habilitar solo entrada por defecto en caso de error
-                btnEntrada.setEnabled(true);
-                btnSalida.setEnabled(false);
-            }
-        });
-    }
-
-    private String formatTime(String time24) {
-        try {
-            SimpleDateFormat input = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-            SimpleDateFormat output = new SimpleDateFormat("hh:mm a", Locale.getDefault());
-            Date date = input.parse(time24);
-            return output.format(date);
-        } catch (Exception e) {
-            return time24; // Devolver original si hay error
-        }
-    }
-
-    private void updateButtonStates(boolean hasEntrada, boolean hasSalida) {
-        if (!hasEntrada) {
-            // Sin entrada: habilitar solo entrada
-            btnEntrada.setEnabled(true);
-            btnSalida.setEnabled(false);
-        } else if (!hasSalida) {
-            // Con entrada pero sin salida: habilitar solo salida
-            btnEntrada.setEnabled(false);
-            btnSalida.setEnabled(true);
-        } else {
-            // Con entrada y salida: deshabilitar ambos
-            btnEntrada.setEnabled(false);
-            btnSalida.setEnabled(false);
-        }
-
-        Log.d(TAG, "Botones actualizados - Entrada: " + hasEntrada + ", Salida: " + hasSalida);
-    }
-
-    private void registrarAsistencia(String tipoAccion) {
-        Log.d(TAG, "=== REGISTRANDO ASISTENCIA ===");
-        Log.d(TAG, "Tipo: " + tipoAccion + ", Usuario: " + userId);
-
-        // Deshabilitar botones mientras se procesa
-        btnEntrada.setEnabled(false);
-        btnSalida.setEnabled(false);
-        hideConfirmationMessage();
-
-        // Determinar ID del tipo de acción
-        int tipoAccionId = "entrada".equals(tipoAccion) ? 1 : 2;
-
-        repository.registrarAsistencia(userFirebaseUid, tipoAccionId, new FirebaseRepository.AsistenciaCallback() {
-            @Override
-            public void onSuccess(Asistencia asistencia) {
-                Log.d(TAG, "✓ Asistencia registrada exitosamente");
-
-                runOnUiThread(() -> {
-                    String timeFormatted = formatTime(asistencia.getHora());
-                    String mensaje = "entrada".equals(tipoAccion) ?
-                            "Entrada registrada correctamente a las " + timeFormatted :
-                            "Salida registrada correctamente a las " + timeFormatted;
-
-                    showConfirmationMessage(mensaje, true);
-
-                    // Recargar datos del día
-                    loadTodayAttendance();
-                });
-            }
-
-            @Override
-            public void onError(Exception error) {
-                Log.e(TAG, "✗ Error registrando asistencia", error);
-
-                runOnUiThread(() -> {
-                    String mensaje = "Error registrando " + tipoAccion + ": " + error.getMessage();
-                    showConfirmationMessage(mensaje, false);
-
-                    // Rehabilitar botones
-                    loadTodayAttendance(); // Esto actualizará el estado correcto de los botones
-                });
-            }
-        });
-    }
-
-    private void showConfirmationMessage(String message, boolean isSuccess) {
-        tvConfirmationMessage.setText(message);
-        tvConfirmationMessage.setVisibility(View.VISIBLE);
-
-        // Ocultar el mensaje después de 5 segundos
-        timeHandler.postDelayed(() -> hideConfirmationMessage(), 5000);
-    }
-
-    private void hideConfirmationMessage() {
-        tvConfirmationMessage.setVisibility(View.GONE);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadTodayAttendance(); // Recargar datos cuando vuelva a la activity
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (timeHandler != null && timeRunnable != null) {
-            timeHandler.removeCallbacks(timeRunnable);
-        }
     }
 
     @Override
