@@ -1,10 +1,13 @@
 package com.example.relojcontrol.adapters;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.relojcontrol.R;
 import com.example.relojcontrol.models.Usuario;
@@ -52,6 +55,7 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
 
     static class UsuarioViewHolder extends RecyclerView.ViewHolder {
         private TextView tvNombre, tvEmail, tvRol, tvEstado;
+        private View viewStatusIndicator;
 
         public UsuarioViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -59,10 +63,13 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
             tvEmail = itemView.findViewById(R.id.tv_email);
             tvRol = itemView.findViewById(R.id.tv_rol);
             tvEstado = itemView.findViewById(R.id.tv_estado_usuario);
+            viewStatusIndicator = itemView.findViewById(R.id.viewStatusIndicator);
         }
 
         // En el metodo bind del ViewHolder:
         public void bind(final Usuario usuario, final OnUsuarioClickListener listener) {
+            Context context = itemView.getContext();
+
             // Configurar datos del usuario
             tvNombre.setText(usuario.getNombreCompleto());
             tvEmail.setText(usuario.getCorreo());
@@ -76,15 +83,24 @@ public class UsuarioAdapter extends RecyclerView.Adapter<UsuarioAdapter.UsuarioV
                 tvRol.setBackgroundResource(R.drawable.badge_rol_empleado);
             }
 
-            // Configurar estado
+            // Logica de estado --
             String estado = usuario.getEstadoUsuario();
-            // Usamos equalsIgnoreCase para que detecte "activo" o "Activo"
-            if (estado != null && estado.equalsIgnoreCase("activo")) {
-                tvEstado.setText("Activo");
-                tvEstado.setBackgroundResource(R.drawable.badge_estado_activo);
-            } else {
-                tvEstado.setText("Inactivo");
-                tvEstado.setBackgroundResource(R.drawable.badge_estado_inactivo);
+            boolean esActivo = estado != null && estado.equalsIgnoreCase("activo");
+
+            //definir color segun estado
+            int colorRes = esActivo ? R.color.success_color : R.color.error_color;
+            int colorInt = ContextCompat.getColor(context, colorRes);
+
+            //configurar texto
+            tvEstado.setText(esActivo ? "Activo" : "Inactivo");
+
+            //pintar badge
+            tvEstado.setBackgroundResource(R.drawable.bg_rounded);
+            tvEstado.setBackgroundTintList(ColorStateList.valueOf(colorInt));
+
+            //pintar barra lateral
+            if (viewStatusIndicator != null) {
+                viewStatusIndicator.setBackgroundColor(colorInt);
             }
 
             // Click en el item completo

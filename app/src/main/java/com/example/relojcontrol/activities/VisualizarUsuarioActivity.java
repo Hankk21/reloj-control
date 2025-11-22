@@ -214,7 +214,13 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         }
 
         String estado = usuario.getEstadoUsuario();
-        tvEstadoBadge.setText(estado != null ? estado.toUpperCase() : "Desconocido");
+        boolean esActivo = "activo".equalsIgnoreCase(estado);
+
+        tvEstadoBadge.setText(esActivo ? "Activo" : "Inactivo");
+
+        // Cambiar color del fondo
+        int colorRes = esActivo ? R.color.success_color : R.color.error_color;
+        tvEstadoBadge.setBackgroundTintList(getColorStateList(colorRes));
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Usuario: " + usuario.getNombre());
