@@ -6,19 +6,21 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
     app:cardBackgroundColor="@color/white">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="12dp">
 
         <View
             android:id="@+id/viewStatusIndicator"
-            android:layout_width="6dp"
+            android:layout_width="4dp"
             android:layout_height="0dp"
             android:background="@color/success_color"
+            android:layout_marginEnd="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -27,15 +29,13 @@
             android:id="@+id/ivAvatarPlaceholder"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginStart="12dp"
             android:background="@drawable/bg_circle_gray"
-            android:padding="8dp"
+            android:padding="10dp"
             android:src="@drawable/ic_person"
             app:tint="@color/text_secondary"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/viewStatusIndicator"
+            app:layout_constraintStart_toEndOf="@+id/viewStatusIndicator"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
@@ -43,25 +43,32 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="8dp"
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:ellipsize="end"
+            android:maxLines="1"
             app:layout_constraintBottom_toTopOf="@+id/tv_email"
             app:layout_constraintEnd_toStartOf="@+id/tv_rol"
             app:layout_constraintStart_toEndOf="@+id/ivAvatarPlaceholder"
-            app:layout_constraintTop_toTopOf="@+id/ivAvatarPlaceholder"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed"
             tools:text="Cristian Developer" />
 
         <TextView
             android:id="@+id/tv_email"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
-            app:layout_constraintBottom_toBottomOf="@+id/ivAvatarPlaceholder"
-            app:layout_constraintEnd_toEndOf="@+id/tv_nombre_usuario"
-            app:layout_constraintStart_toStartOf="@+id/tv_nombre_usuario"
+            android:ellipsize="end"
+            android:maxLines="1"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/tv_rol"
+            app:layout_constraintStart_toEndOf="@+id/ivAvatarPlaceholder"
             app:layout_constraintTop_toBottomOf="@+id/tv_nombre_usuario"
             tools:text="correo@ejemplo.com" />
 
@@ -69,27 +76,31 @@
             android:id="@+id/tv_rol"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
             android:background="@drawable/bg_rounded"
-            android:paddingHorizontal="8dp"
+            android:backgroundTint="@color/primary_color"
+            android:paddingHorizontal="12dp"
             android:paddingVertical="4dp"
             android:text="Admin"
-            android:textColor="@color/primary_color"
+            android:textColor="@color/white"
             android:textSize="11sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/tv_nombre_usuario"
-            app:layout_constraintBottom_toBottomOf="@+id/tv_nombre_usuario"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/tv_estado_usuario"
-            android:layout_width="45dp"
-            android:layout_height="15dp"
-            android:layout_marginTop="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_rounded"
+            android:backgroundTint="@color/success_color"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
             android:text="Activo"
-            android:textColor="@color/success_color"
-            android:textSize="11sp"
-            app:layout_constraintEnd_toEndOf="@+id/tv_rol"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_rol" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
