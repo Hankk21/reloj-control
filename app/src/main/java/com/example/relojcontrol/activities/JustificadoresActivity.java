@@ -77,6 +77,7 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     // Launcher para seleccionar archivos
     private ActivityResultLauncher<Intent> seleccionarArchivoLauncher;
+    private String urlDocumentoFinal = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -222,8 +223,11 @@ public class JustificadoresActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         archivoSeleccionado = result.getData().getData();
                         if (archivoSeleccionado != null) {
-                            btnAdjuntar.setText("Archivo: " + obtenerNombreArchivo(archivoSeleccionado));
+                            String nombreArchivo = obtenerNombreArchivo(archivoSeleccionado);
+                            btnAdjuntar.setText(nombreArchivo); // Muestra el nombre en el botón
                             btnAdjuntar.setIconResource(R.drawable.ic_check);
+                            // Por ahora, usaremos el nombre como "URL" si no hay Storage
+                            urlDocumentoFinal = nombreArchivo;
                         }
                     }
                 }
@@ -284,14 +288,19 @@ public class JustificadoresActivity extends AppCompatActivity {
     private void enviarJustificacion() {
         if (!validarFormulario()) return;
 
+        // Deshabilitar botón para evitar doble envío
+        btnEnviar.setEnabled(false);
+        btnEnviar.setText("Enviando...");
+
         Justificacion justificacion = new Justificacion();
         justificacion.setMotivo(etMotivo.getText().toString().trim());
         justificacion.setDescripcion(etDescripcion.getText().toString().trim());
         justificacion.setFechaJustificar(etFechaJustificar.getText().toString().trim());
         justificacion.setFechaCreacion(obtenerFechaActual());
-
-        // Asignar ID del usuario actual
         justificacion.setIdUsuario(idUsuarioActual);
+        justificacion.setIdEstado(2); //pendiente
+
+        justificacion.setUrlDocumento(urlDocumentoFinal);
 
         justificacion.setIdEstado(2); // Pendiente
         justificacion.setUrlDocumento(archivoSeleccionado != null ? archivoSeleccionado.toString() : "");
@@ -302,13 +311,17 @@ public class JustificadoresActivity extends AppCompatActivity {
         if (key != null) {
             ref.child(key).setValue(justificacion)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Solicitud enviada con éxito", Toast.LENGTH_SHORT).show();
                         limpiarFormulario();
                         cargarHistorial();
+                        // Reactivar botón
+                        btnEnviar.setEnabled(true);
+                        btnEnviar.setText("Enviar");
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error envio", e);
+                        Toast.makeText(this, "Error al enviar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        btnEnviar.setEnabled(true);
+                        btnEnviar.setText("Enviar");
                     });
         }
     }
@@ -321,9 +334,9 @@ public class JustificadoresActivity extends AppCompatActivity {
         licencia.setFechaInicio(etFechaInicio.getText().toString().trim());
         licencia.setFechaFin(etFechaFin.getText().toString().trim());
         licencia.setFechaCreacion(obtenerFechaActual());
-
         // Asignar ID del usuario actual
         licencia.setIdUsuario(idUsuarioActual);
+        licencia.setUrlDocumento(urlDocumentoFinal);
 
         licencia.setIdEstado(2); // Pendiente
         licencia.setUrlDocumento(archivoSeleccionado != null ? archivoSeleccionado.toString() : "");
@@ -334,13 +347,17 @@ public class JustificadoresActivity extends AppCompatActivity {
         if (key != null) {
             ref.child(key).setValue(licencia)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Solicitud enviada con éxito", Toast.LENGTH_SHORT).show();
                         limpiarFormulario();
                         cargarHistorial();
+                        // Reactivar botón
+                        btnEnviar.setEnabled(true);
+                        btnEnviar.setText("Enviar");
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error envio", e);
+                        Toast.makeText(this, "Error al enviar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        btnEnviar.setEnabled(true);
+                        btnEnviar.setText("Enviar");
                     });
         }
     }

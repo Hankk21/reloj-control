@@ -1,7 +1,9 @@
 package com.example.relojcontrol.activities;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -200,8 +202,8 @@ public class ReportesActivity extends AppCompatActivity {
 
         ivRefreshPreview.setOnClickListener(v -> actualizarVistaPrevia());
 
-        btnGenerarPdf.setOnClickListener(v -> Toast.makeText(this, "Función PDF pendiente", Toast.LENGTH_SHORT).show());
-        btnExportarExcel.setOnClickListener(v -> Toast.makeText(this, "Función Excel pendiente", Toast.LENGTH_SHORT).show());
+        btnGenerarPdf.setOnClickListener(v -> Toast.makeText(this, "Próximamente en v2.0", Toast.LENGTH_SHORT).show());
+        btnExportarExcel.setOnClickListener(v -> exportarDatosACSV());
     }
 
     private void loadUsuarios() {
@@ -214,13 +216,6 @@ public class ReportesActivity extends AppCompatActivity {
 
                 List<String> nombres = new ArrayList<>();
                 nombres.add("Todos los usuarios");
-
-                // OJO: Aquí necesitamos saber el UID String de Firebase, no el ID int.
-                // Asumo que tu modelo Usuario tiene un campo para el UID de Firebase,
-                // o que lo inyectaste al cargar.
-                // Si no, tendremos que buscar en userMappings.
-                // Por simplicidad y para que funcione YA, usaremos el ID numérico si es lo único que tienes,
-                // pero lo ideal sería mapear al UID real.
 
                 for (Usuario u : usuarios) {
                     String nombre = u.getNombre() + " " + u.getApellido();
@@ -401,6 +396,42 @@ public class ReportesActivity extends AppCompatActivity {
             }
         } catch (ParseException e) { e.printStackTrace(); }
         return output;
+    }
+
+    private void exportarDatosACSV() {
+        if (barChart.getData() == null || barChart.getData().getEntryCount() == 0) {
+            Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        StringBuilder csvData = new StringBuilder();
+        csvData.append("Fecha,Cantidad Asistencias\n");
+
+        // Extraemos los datos que ya tiene el gráfico
+        // Ejemplo simple iterando lo que mostramos:
+        csvData.append("Total Asistencias,").append(tvStat1Value.getText()).append("\n");
+        csvData.append("Total Atrasos,").append(tvStat2Value.getText()).append("\n");
+        csvData.append("Ausencias,").append(tvStat3Value.getText()).append("\n");
+
+        try {
+            // Crear archivo temporal
+            java.io.File file = new java.io.File(getExternalCacheDir(), "reporte_asistencia.csv");
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+            fos.write(csvData.toString().getBytes());
+            fos.close();
+
+            // Compartir archivo
+            Uri uri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/csv");
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, "Exportar reporte con..."));
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error exportando", e);
+            Toast.makeText(this, "Error al generar archivo", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void calcularEstadisticasYGraficar(List<Asistencia> datos) {

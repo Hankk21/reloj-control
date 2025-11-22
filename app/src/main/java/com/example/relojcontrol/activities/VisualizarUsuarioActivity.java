@@ -92,7 +92,7 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         usuarioIdNumerico = getIntent().getStringExtra("usuario_id");
 
         if (usuarioIdNumerico != null && !usuarioIdNumerico.isEmpty()) {
-            loadUsuarioData(); // Aquí inicia la magia corregida
+            loadUsuarioData();
         } else {
             Log.e(TAG, "No se recibió usuario_id");
             Toast.makeText(this, "Error: No se seleccionó usuario", Toast.LENGTH_SHORT).show();
@@ -316,7 +316,8 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         ivCopyRut.setOnClickListener(v -> copiar("RUT", tvRut.getText().toString()));
         ivCopyEmail.setOnClickListener(v -> copiar("Correo", tvCorreo.getText().toString()));
         btnEliminar.setOnClickListener(v -> confirmarEliminar());
-        // Agregar listeners restantes...
+        btnEditar.setOnClickListener(v -> editarUsuario());
+        btnResetearPassword.setOnClickListener(v -> resetearPassword());
     }
 
     private void copiar(String label, String text) {
@@ -328,27 +329,46 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         }
     }
 
+    private void editarUsuario() {
+        Intent intent = new Intent(this, AnadirUsuarioActivity.class);
+        intent.putExtra("modo_edicion", true);
+        intent.putExtra("usuario_id", usuarioIdNumerico); // Pasamos el ID para que la otra activity cargue los datos
+        startActivity(intent);
+    }
+
     private void confirmarEliminar() {
-        new AlertDialog.Builder(this)
-                .setTitle("Eliminar Usuario")
-                .setMessage("¿Seguro? Esta acción no se deshace.")
-                .setPositiveButton("Eliminar", (d, w) -> {
-                    if (currentFirebaseUid != null) {
-                        repository.eliminarUsuario(currentFirebaseUid, new FirebaseRepository.CrudCallback() {
-                            @Override
-                            public void onSuccess() {
-                                Toast.makeText(VisualizarUsuarioActivity.this, "Eliminado", Toast.LENGTH_SHORT).show();
-                                finish();
-                            }
-                            @Override
-                            public void onError(Exception e) {
-                                Toast.makeText(VisualizarUsuarioActivity.this, "Error al eliminar", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
+        //Borrar de Realtime Database
+        repository.eliminarUsuario(currentFirebaseUid, new FirebaseRepository.CrudCallback() {
+            @Override
+            public void onSuccess() {
+                // Opcional: Llamar a una Cloud Function para borrar de Authentication
+                // O simplemente borrar la data visual:
+                Toast.makeText(VisualizarUsuarioActivity.this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
+                finish(); // Volver a la lista
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(VisualizarUsuarioActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void resetearPassword() {
+        String emailUsuario = tvCorreo.getText().toString();
+
+        if (emailUsuario.isEmpty()) return;
+
+        FirebaseAuth.getInstance().sendPasswordResetEmail(emailUsuario)
+                .addOnSuccessListener(aVoid -> {
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Correo Enviado")
+                            .setMessage("Se ha enviado un enlace de restablecimiento a " + emailUsuario)
+                            .setPositiveButton("OK", null)
+                            .show();
                 })
-                .setNegativeButton("Cancelar", null)
-                .show();
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     // Métodos de menú y override obligatorios
