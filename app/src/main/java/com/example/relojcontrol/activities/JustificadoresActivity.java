@@ -62,6 +62,7 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     // Variables de control
     private String tipoSeleccionado = "Justificaciones";
+    private String urlDocumentoFinal = "";
     private Uri archivoSeleccionado = null;
 
     // Firebase y datos
@@ -77,18 +78,18 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     // Launcher para seleccionar archivos
     private ActivityResultLauncher<Intent> seleccionarArchivoLauncher;
-    private String urlDocumentoFinal = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_justificadores);
 
-        // 1. Inicializar Firebase y Preferencias
+        // Inicializar Firebase y Preferencias
         databaseRef = FirebaseDatabase.getInstance().getReference();
         sharedPreferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
 
-        // 2. Cargar ID del Usuario
+        // Cargar ID del Usuario
         loadUserData();
 
         initViews();
@@ -98,10 +99,8 @@ public class JustificadoresActivity extends AppCompatActivity {
         setupFileSelector();
         setupListeners();
 
-        // 3. Cargar UI inicial
-        actualizarFormulario();
 
-        // 4. Verificar Modo (Historial Unificado o Individual)
+        // Verificar Modo (Historial Unificado o Individual)
         checkIntentMode();
     }
 
@@ -119,20 +118,18 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void checkIntentMode() {
         String tipoIntent = getIntent().getStringExtra("tipo");
-        if ("historial".equals(tipoIntent)) {
-            // Si viene de "Mi Historial", mostramos Justificaciones por defecto
-            cargarHistorial();
-        } else if (tipoIntent != null) {
-            // Si viene con tipo específico, seteamos el spinner
-            if ("Licencias".equals(tipoIntent)) {
-                spinnerTipo.setText("Licencias", false);
-                tipoSeleccionado = "Licencias";
-            }
-            actualizarFormulario();
-            cargarHistorial();
+
+        if ("Licencias".equals(tipoIntent)) {
+            tipoSeleccionado = "Licencias";
+            spinnerTipo.setText("Licencias", false);
         } else {
-            cargarHistorial();
+            // Por defecto o si dice "Justificaciones"
+            tipoSeleccionado = "Justificaciones";
+            spinnerTipo.setText("Justificaciones", false);
         }
+
+        actualizarFormulario();
+        cargarHistorial();
     }
 
     private void initViews() {
@@ -183,10 +180,6 @@ public class JustificadoresActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_dropdown_item_1line, tipos);
         spinnerTipo.setAdapter(adapter);
-        // No setear texto aquí si ya lo hace checkIntentMode, o dejar default
-        if (spinnerTipo.getText().toString().isEmpty()) {
-            spinnerTipo.setText("Justificaciones", false);
-        }
 
         spinnerTipo.setOnItemClickListener((parent, view, position, id) -> {
             tipoSeleccionado = tipos[position];
@@ -203,17 +196,10 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void mostrarDatePicker(final TextInputEditText editText) {
         Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String fecha = String.format(Locale.getDefault(), "%04d-%02d-%02d",
-                            selectedYear, selectedMonth + 1, selectedDay);
-                    editText.setText(fecha);
-                }, year, month, day);
-        datePickerDialog.show();
+        new DatePickerDialog(this, (view, year, month, day) -> {
+            String fecha = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, day);
+            editText.setText(fecha);
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void setupFileSelector() {
@@ -260,7 +246,7 @@ public class JustificadoresActivity extends AppCompatActivity {
             tilFechaInicio.setVisibility(View.VISIBLE);
             tilFechaFin.setVisibility(View.VISIBLE);
         }
-        // Opcional: limpiarFormulario() si queremos borrar al cambiar de pestaña
+        limpiarFormulario();
     }
 
     private void seleccionarArchivo() {
@@ -290,7 +276,6 @@ public class JustificadoresActivity extends AppCompatActivity {
 
         // Deshabilitar botón para evitar doble envío
         btnEnviar.setEnabled(false);
-        btnEnviar.setText("Enviando...");
 
         Justificacion justificacion = new Justificacion();
         justificacion.setMotivo(etMotivo.getText().toString().trim());
@@ -352,12 +337,10 @@ public class JustificadoresActivity extends AppCompatActivity {
                         cargarHistorial();
                         // Reactivar botón
                         btnEnviar.setEnabled(true);
-                        btnEnviar.setText("Enviar");
                     })
                     .addOnFailureListener(e -> {
                         Toast.makeText(this, "Error al enviar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         btnEnviar.setEnabled(true);
-                        btnEnviar.setText("Enviar");
                     });
         }
     }
@@ -403,85 +386,51 @@ public class JustificadoresActivity extends AppCompatActivity {
 
     private void cargarHistorialJustificaciones() {
         tvHistorialTitle.setText("Historial de Justificaciones");
-        DatabaseReference ref = databaseRef.child("justificaciones");
-
-        // Filtrar por 'id_usuario' (usando el ID numérico)
-        ref.orderByChild("id_usuario").equalTo(idUsuarioActual)
-                .addValueEventListener(new ValueEventListener() {
+        databaseRef.child("justificaciones").orderByChild("id_usuario").equalTo(idUsuarioActual)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         listaJustificaciones.clear();
-                        if (snapshot.exists()) {
-                            for (DataSnapshot data : snapshot.getChildren()) {
-                                Justificacion j = data.getValue(Justificacion.class);
-                                if (j != null) {
-                                    j.setId(data.getKey());
-                                    listaJustificaciones.add(j);
-                                }
-                            }
-                            // Ordenar: más reciente primero
-                            Collections.reverse(listaJustificaciones);
-
-                            mostrarHistorialJustificaciones();
-                            tvNoHistorial.setVisibility(View.GONE);
-                            rvHistorial.setVisibility(View.VISIBLE);
-                        } else {
-                            tvNoHistorial.setVisibility(View.VISIBLE);
-                            rvHistorial.setVisibility(View.GONE);
+                        for (DataSnapshot d : snapshot.getChildren()) {
+                            Justificacion j = d.getValue(Justificacion.class);
+                            if (j != null) { j.setId(d.getKey()); listaJustificaciones.add(j); }
+                        }
+                        Collections.reverse(listaJustificaciones);
+                        actualizarLista(listaJustificaciones.isEmpty());
+                        if (!listaJustificaciones.isEmpty()) {
+                            justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones, JustificadoresActivity.this);
+                            rvHistorial.setAdapter(justificacionesAdapter);
                         }
                     }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Error cargar historial", error.toException());
-                    }
+                    @Override public void onCancelled(@NonNull DatabaseError e) {}
                 });
     }
 
     private void cargarHistorialLicencias() {
         tvHistorialTitle.setText("Historial de Licencias");
-        DatabaseReference ref = databaseRef.child("licencias");
-
-        // CORRECCIÓN: Filtrar por 'id_usuario'
-        ref.orderByChild("id_usuario").equalTo(idUsuarioActual)
-                .addValueEventListener(new ValueEventListener() {
+        databaseRef.child("licencias").orderByChild("id_usuario").equalTo(idUsuarioActual)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         listaLicencias.clear();
-                        if (snapshot.exists()) {
-                            for (DataSnapshot data : snapshot.getChildren()) {
-                                Licencia l = data.getValue(Licencia.class);
-                                if (l != null) {
-                                    l.setId(data.getKey());
-                                    listaLicencias.add(l);
-                                }
-                            }
-                            Collections.reverse(listaLicencias);
-
-                            mostrarHistorialLicencias();
-                            tvNoHistorial.setVisibility(View.GONE);
-                            rvHistorial.setVisibility(View.VISIBLE);
-                        } else {
-                            tvNoHistorial.setVisibility(View.VISIBLE);
-                            rvHistorial.setVisibility(View.GONE);
+                        for (DataSnapshot d : snapshot.getChildren()) {
+                            Licencia l = d.getValue(Licencia.class);
+                            if (l != null) { l.setId(d.getKey()); listaLicencias.add(l); }
+                        }
+                        Collections.reverse(listaLicencias);
+                        actualizarLista(listaLicencias.isEmpty());
+                        if (!listaLicencias.isEmpty()) {
+                            licenciasAdapter = new LicenciasAdapter(listaLicencias, JustificadoresActivity.this);
+                            rvHistorial.setAdapter(licenciasAdapter);
                         }
                     }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Error cargar historial", error.toException());
-                    }
+                    @Override public void onCancelled(@NonNull DatabaseError e) {}
                 });
     }
 
-    private void mostrarHistorialJustificaciones() {
-        justificacionesAdapter = new JustificacionesAdapter(listaJustificaciones, this);
-        rvHistorial.setAdapter(justificacionesAdapter);
-    }
-
-    private void mostrarHistorialLicencias() {
-        licenciasAdapter = new LicenciasAdapter(listaLicencias, this);
-        rvHistorial.setAdapter(licenciasAdapter);
+    private void actualizarLista(boolean vacia) {
+        rvHistorial.setVisibility(vacia ? View.GONE : View.VISIBLE);
+        tvNoHistorial.setVisibility(vacia ? View.VISIBLE : View.GONE);
     }
 
     private String obtenerFechaActual() {
@@ -497,13 +446,6 @@ public class JustificadoresActivity extends AppCompatActivity {
         archivoSeleccionado = null;
         btnAdjuntar.setText("Adjuntar archivo PDF (máx. 5 MB)");
         btnAdjuntar.setIconResource(R.drawable.ic_attach_file);
-
-        tilMotivo.setError(null);
-        tilDescripcion.setError(null);
-        tilFechaJustificar.setError(null);
-        tilFechaInicio.setError(null);
-        tilFechaFin.setError(null);
-
         // Quitar focus
         etMotivo.clearFocus();
     }

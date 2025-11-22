@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -24,6 +25,10 @@ import com.example.relojcontrol.models.Asistencia;
 import com.example.relojcontrol.network.FirebaseRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -61,6 +66,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     // Reloj
     private Handler timeHandler = new Handler();
     private Runnable timeRunnable;
+    private ValueEventListener estadoUsuarioListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -301,10 +307,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.menu_mi_asistencia) {
-            //codigo
-
-        }else if (id == R.id.menu_mis_justificaciones) {
+        if (id == R.id.menu_mis_justificaciones) {
             Intent intentJustificaciones = new Intent(this, JustificadoresActivity.class);
             intentJustificaciones.putExtra("tipo", "Justificaciones");
             startActivity(intentJustificaciones);
@@ -328,7 +331,41 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         }else{
             return super.onOptionsItemSelected(item);
         }
-        return false;
+    }
+
+    private void escucharEstadoUsuario() {
+        if (userFirebaseUid == null || userFirebaseUid.isEmpty()) return;
+
+        DatabaseReference userRef = repository.mDatabase.child("usuarios").child(userFirebaseUid);
+
+        estadoUsuarioListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String estado = snapshot.child("estado_usuario").getValue(String.class);
+                    // Si el estado NO es activo, cerrar sesión forzosa
+                    if (estado != null && !"activo".equalsIgnoreCase(estado)) {
+                        Toast.makeText(MainEmpleadoActivity.this, "Tu cuenta ha sido desactivada.", Toast.LENGTH_LONG).show();
+                        forceLogout();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        };
+
+        userRef.addValueEventListener(estadoUsuarioListener);
+    }
+
+    // metodo para forzar salida
+    private void forceLogout() {
+        if (sharedPreferences != null) sharedPreferences.edit().clear().apply();
+        FirebaseAuth.getInstance().signOut();
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -336,6 +373,10 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         super.onDestroy();
         if (timeHandler != null && timeRunnable != null) {
             timeHandler.removeCallbacks(timeRunnable);
+        }
+        // Limpiar listener de estado para evitar crashes
+        if (userFirebaseUid != null && estadoUsuarioListener != null) {
+            repository.mDatabase.child("usuarios").child(userFirebaseUid).removeEventListener(estadoUsuarioListener);
         }
     }
 }
