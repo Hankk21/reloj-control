@@ -318,6 +318,10 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
         btnEliminar.setOnClickListener(v -> confirmarEliminar());
         btnEditar.setOnClickListener(v -> editarUsuario());
         btnResetearPassword.setOnClickListener(v -> resetearPassword());
+        // Al hacer clic en la etiqueta "Activo/Inactivo", cambiamos el estado
+        tvEstadoBadge.setOnClickListener(v -> {
+            mostrarDialogoCambiarEstado();
+        });
     }
 
     private void copiar(String label, String text) {
@@ -369,5 +373,30 @@ public class VisualizarUsuarioActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void mostrarDialogoCambiarEstado() {
+        String estadoActual = usuario.getEstadoUsuario(); // "activo" o "inactivo"
+        String nuevoEstado = "activo".equalsIgnoreCase(estadoActual) ? "inactivo" : "activo";
+        String accion = "activo".equalsIgnoreCase(estadoActual) ? "Desactivar" : "Activar";
+        int colorAccion = "activo".equalsIgnoreCase(estadoActual) ? R.color.error_color : R.color.success_color;
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(accion + " Usuario")
+                .setMessage("¿Deseas cambiar el estado de este usuario a " + nuevoEstado.toUpperCase() + "?\n\n" +
+                        (nuevoEstado.equals("inactivo") ? "El usuario no podrá acceder al sistema." : "El usuario recuperará el acceso."))
+                .setPositiveButton("Sí, " + accion, (dialog, which) -> {
+                    // Actualizar en Firebase
+                    repository.mDatabase.child("usuarios").child(currentFirebaseUid).child("estado_usuario")
+                            .setValue(nuevoEstado)
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show();
+                                // Actualizar objeto local y UI
+                                usuario.setEstadoUsuario(nuevoEstado);
+                                mostrarInformacionUsuario(); // Esto refrescará el color del badge automáticamente
+                            });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 }
