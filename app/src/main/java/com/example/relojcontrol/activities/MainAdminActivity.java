@@ -121,26 +121,6 @@ public class MainAdminActivity extends AppCompatActivity {
             Intent intent = new Intent(this, UsuariosActivity.class);
             startActivity(intent);
             return true;
-        } else if (id == R.id.menu_reportes) {
-            //navegar a pantalla de reportes
-            Intent intent = new Intent(this, ReportesActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (id == R.id.menu_justificaciones) {
-            //navegar a pantalla de justificaciones
-            Intent intent = new Intent(this, JustificacionesAdminActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (id == R.id.menu_licencias) {
-            //navegar a pantalla de licencias
-            Intent intent = new Intent(this, LicenciasAdminActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (id == R.id.menu_ver_asistencias) {
-            //navegar a pantalla de licencias
-            Intent intent = new Intent(this, Asistencia.class);
-            startActivity(intent);
-            return true;
         } else if (id == R.id.menu_cerrar_sesion) {
             //cerrar sesion
             cerrarSesion();
