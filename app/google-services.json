@@ -1,10 +1,30 @@
 {
   "project_info": {
     "project_number": "743114637181",
+    "firebase_url": "https://relojcontrol-63118175-default-rtdb.firebaseio.com",
     "project_id": "relojcontrol-63118175",
     "storage_bucket": "relojcontrol-63118175.firebasestorage.app"
   },
   "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:743114637181:android:67e0b1868c6e13ddfe5614",
+        "android_client_info": {
+          "package_name": "cl.soydev.relojcontrol"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIkGHavPk1KsJ51zXVHdJ7btgHZD7_k0I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
     {
       "client_info": {
         "mobilesdk_app_id": "1:743114637181:android:b786638971c04be6fe5614",
