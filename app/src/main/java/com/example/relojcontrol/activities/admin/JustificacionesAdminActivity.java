@@ -73,7 +73,7 @@ public class JustificacionesAdminActivity extends AppCompatActivity {
         showLoading(true);
         justificacionesRef = FirebaseDatabase.getInstance().getReference("justificaciones");
 
-        // Cargar solo justificaciones pendientes (estado = 2)
+        // Cargar solo justificaciones pendientes
         justificacionesRef.orderByChild("id_estado").equalTo(2)
                 .addValueEventListener(new ValueEventListener() {
                     @Override

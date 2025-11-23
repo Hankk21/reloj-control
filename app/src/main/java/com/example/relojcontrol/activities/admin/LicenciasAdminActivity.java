@@ -73,7 +73,7 @@ public class LicenciasAdminActivity extends AppCompatActivity {
         showLoading(true);
         licenciasRef = FirebaseDatabase.getInstance().getReference("licencias");
 
-        // Cargar solo licencias pendientes (estado = 2)
+        // Cargar solo licencias pendientes
         licenciasRef.orderByChild("id_estado").equalTo(2)
                 .addValueEventListener(new ValueEventListener() {
                     @Override

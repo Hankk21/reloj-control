@@ -51,7 +51,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     // Vistas "ocultas" (para evitar crash por referencias antiguas)
     private TextView tvEntradaTime, tvSalidaTime, tvEntradaStatus, tvSalidaStatus;
 
-    // Vistas Nuevas (Lista)
+    // Vistas Nuevas
     private RecyclerView rvHistorial;
     private TextView tvNoHistorial;
     private AsistenciaAdapter adapter;
@@ -59,7 +59,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
     // Data
     private FirebaseRepository repository;
     private SharedPreferences sharedPreferences;
-    private String userId; // ID Numérico (Visual)
+    private String userId; // ID Numérico
     private String userFirebaseUid; // UID Real (Firebase)
     private String userName;
 
@@ -101,7 +101,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         btnSalida = findViewById(R.id.btn_salida);
         tvConfirmationMessage = findViewById(R.id.tv_confirmation_message);
 
-        // Variables de texto antiguas (Defensa contra null)
+        // Variables de texto antiguas
         tvEntradaTime = findViewById(R.id.tv_entrada_time);
         tvSalidaTime = findViewById(R.id.tv_salida_time);
         tvEntradaStatus = findViewById(R.id.tv_entrada_status);
@@ -195,7 +195,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
                     if (rvHistorial != null) rvHistorial.setAdapter(adapter);
                 }
 
-                //Actualizar Textos Ocultos (Para evitar crashes si algo los busca)
+                //Actualizar Textos Ocultos
                 if (tvEntradaStatus != null) tvEntradaStatus.setText(hasEntrada ? "OK" : "-");
             }
 
