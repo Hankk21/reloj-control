@@ -326,7 +326,7 @@ public class ReportesActivity extends AppCompatActivity {
                 }
 
                 for (Usuario u : usuarios) {
-                    // Filtro de usuario único
+                    // Filtro de usuario único: si no es el seleccionado, lo contamos como "listo" y saltamos
                     if (uidUsuarioSeleccionado != null && !String.valueOf(u.getIdUsuario()).equals(uidUsuarioSeleccionado)) {
                         checkFinProceso(contadores, todasLasAsistencias);
                         continue;
@@ -375,7 +375,7 @@ public class ReportesActivity extends AppCompatActivity {
 
     //Metodo para filtrar, calcular y mostrar
     private void procesarDatosYMostrar(List<Asistencia> datosBrutos) {
-        // Este proceso debe correr en el hilo principal
+        // Este proceso debe correr en el hilo principal porque toca la UI
         runOnUiThread(() -> {
             try {
                 List<Asistencia> filtradas = filtrarPorFecha(datosBrutos, fechaDesde, fechaHasta);
