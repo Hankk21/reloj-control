@@ -84,6 +84,7 @@ public class MainEmpleadoActivity extends AppCompatActivity {
         setupClickListeners();
         startTimeUpdater();
         loadTodayAttendance();
+        escucharEstadoUsuario();
     }
 
     private void initFirebase() {
@@ -348,11 +349,16 @@ public class MainEmpleadoActivity extends AppCompatActivity {
                         Toast.makeText(MainEmpleadoActivity.this, "Tu cuenta ha sido desactivada.", Toast.LENGTH_LONG).show();
                         forceLogout();
                     }
+                } else {
+                    Toast.makeText(MainEmpleadoActivity.this, "Error de cuenta.", Toast.LENGTH_SHORT).show();
+                    forceLogout();
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error escuchando estado", error.toException());
+            }
         };
 
         userRef.addValueEventListener(estadoUsuarioListener);
@@ -360,8 +366,13 @@ public class MainEmpleadoActivity extends AppCompatActivity {
 
     // metodo para forzar salida
     private void forceLogout() {
+        //borrar datos locales
         if (sharedPreferences != null) sharedPreferences.edit().clear().apply();
+
+        //desconectar firebase
         FirebaseAuth.getInstance().signOut();
+
+        //ir a login y borrar historial
         Intent intent = new Intent(this, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
