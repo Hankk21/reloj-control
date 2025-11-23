@@ -259,7 +259,7 @@ public class UsuariosActivity extends AppCompatActivity {
         for (Usuario usuario : usuariosList) {
             boolean cumpleFiltros = true;
 
-            // Filtro por texto de búsqueda (mantener igual)
+            // Filtro por texto de búsqueda
             if (!textosBusqueda.isEmpty()) {
                 String textoCompleto = (usuario.getNombre() + " " + usuario.getApellido() + " " +
                         usuario.getRut() + " " + usuario.getCorreo()).toLowerCase();

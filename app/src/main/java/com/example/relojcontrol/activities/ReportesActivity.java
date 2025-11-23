@@ -317,7 +317,6 @@ public class ReportesActivity extends AppCompatActivity {
                 // Variables para controlar el progreso de carga asíncrona
                 List<Asistencia> todasLasAsistencias = new ArrayList<>();
 
-                // Usamos un array de 2 posiciones: [0] = procesados, [1] = total
                 // Usamos array final para poder accederlo desde dentro del loop
                 final int[] contadores = {0, usuarios.size()};
 
@@ -327,7 +326,7 @@ public class ReportesActivity extends AppCompatActivity {
                 }
 
                 for (Usuario u : usuarios) {
-                    // Filtro de usuario único: si no es el seleccionado, lo contamos como "listo" y saltamos
+                    // Filtro de usuario único
                     if (uidUsuarioSeleccionado != null && !String.valueOf(u.getIdUsuario()).equals(uidUsuarioSeleccionado)) {
                         checkFinProceso(contadores, todasLasAsistencias);
                         continue;
@@ -376,7 +375,7 @@ public class ReportesActivity extends AppCompatActivity {
 
     //Metodo para filtrar, calcular y mostrar
     private void procesarDatosYMostrar(List<Asistencia> datosBrutos) {
-        // Este proceso debe correr en el hilo principal porque toca la UI
+        // Este proceso debe correr en el hilo principal
         runOnUiThread(() -> {
             try {
                 List<Asistencia> filtradas = filtrarPorFecha(datosBrutos, fechaDesde, fechaHasta);
@@ -425,10 +424,8 @@ public class ReportesActivity extends AppCompatActivity {
         String nombreArchivo = "Reporte_" + System.currentTimeMillis() + ".csv";
 
         try {
-            // VERIFICACIÓN DE VERSIÓN DE ANDROID
+            // VERIFICA LA VERSIÓN DE ANDROID
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // === OPCIÓN A: Para Android 10 (API 29) o superior ===
-                // Usamos MediaStore (La forma moderna y limpia)
 
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.MediaColumns.DISPLAY_NAME, nombreArchivo);
@@ -448,8 +445,6 @@ public class ReportesActivity extends AppCompatActivity {
                 }
 
             } else {
-                // === OPCIÓN B: Para Android 9 (API 28) o inferior ===
-                // Usamos la forma clásica con File (Requiere permiso de escritura)
 
                 File directorio = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
                 File file = new File(directorio, nombreArchivo);
@@ -470,20 +465,20 @@ public class ReportesActivity extends AppCompatActivity {
     private void calcularEstadisticasYGraficar(List<Asistencia> datos) {
         int totalAsistencias = 0;
         int totalAtrasos = 0;
-        // Map para agrupar por fecha (para el gráfico)
+        // Map para agrupar por fecha
         Map<String, Integer> conteoPorFecha = new HashMap<>();
 
         for (Asistencia a : datos) {
             if (a.getIdTipoAccion() == 1) { // Solo entradas cuentan como asistencia
                 totalAsistencias++;
 
-                // Lógica de Atraso: Si hora > 09:00:00 (Ajustar según regla de negocio)
+                // Lógica de Atraso: Si hora > 09:00:00
                 if (a.getHora().compareTo("09:00:00") > 0) {
                     totalAtrasos++;
                 }
 
                 // Agrupar para gráfico
-                String fecha = a.getFecha(); // "2023-10-20"
+                String fecha = a.getFecha();
                 conteoPorFecha.put(fecha, conteoPorFecha.getOrDefault(fecha, 0) + 1);
             }
         }
@@ -508,7 +503,7 @@ public class ReportesActivity extends AppCompatActivity {
         ArrayList<String> labels = new ArrayList<>();
 
         int i = 0;
-        // Ordenar fechas (TreeMap ordena claves automáticamente)
+        // Ordenar fechas
         Map<String, Integer> sortedMap = new java.util.TreeMap<>(datosMapa);
 
         for (Map.Entry<String, Integer> entry : sortedMap.entrySet()) {

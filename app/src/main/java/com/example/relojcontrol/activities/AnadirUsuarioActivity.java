@@ -366,7 +366,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
     }
 
     private boolean isValidRut(String rut) {
-        // Simplificada: solo verificar formato básico
+        // solo verificar formato básico
         return RUT_PATTERN.matcher(rut).matches();
     }
 

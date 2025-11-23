@@ -131,7 +131,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void checkUserRole(String uid) {
-        // Buscamos en la base de datos qué rol tiene este usuario
+        // rol que tiene este usuario en BD
         mDatabase.child("usuarios").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
