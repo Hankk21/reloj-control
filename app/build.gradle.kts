@@ -9,7 +9,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.relojcontrol"
+        applicationId = "cl.soydev.relojcontrol"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
