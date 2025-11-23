@@ -8,7 +8,7 @@ public class Reporte {
 
     public Reporte() {}
 
-    // Getters y Setters (tus originales)
+    // Getters y Setters
     public int getIdReporte() { return idReporte; }
     public void setIdReporte(int idReporte) { this.idReporte = idReporte; }
 
