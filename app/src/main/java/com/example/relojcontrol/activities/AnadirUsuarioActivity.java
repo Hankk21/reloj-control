@@ -265,7 +265,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
 
             // Cargar datos del usuario
             if (usuarioId != null && !usuarioId.isEmpty()) {
-                // TODO: Cargar datos del usuario desde Firebase
+                //Cargar datos del usuario desde Firebase
                 Log.d(TAG, "Cargando usuario para edición: " + usuarioId);
             }
         } else {
@@ -366,7 +366,7 @@ public class AnadirUsuarioActivity extends AppCompatActivity {
     }
 
     private boolean isValidRut(String rut) {
-        // Simplificada: solo verificar formato básico
+        // solo verificar formato básico
         return RUT_PATTERN.matcher(rut).matches();
     }
 

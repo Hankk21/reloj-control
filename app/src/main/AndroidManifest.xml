@@ -2,9 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- PERMISOS - van FUERA de <application> -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- PERMISOS  -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -36,7 +34,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Activities adicionales basadas en tus errores -->
         <activity
             android:name=".activities.ReportesActivity"
             android:exported="false"
@@ -53,7 +50,7 @@
             android:parentActivityName=".activities.LoginActivity" />
 
         <activity
-            android:name=".activities.MainEmpleadoActivity"
+            android:name=".activities.empleado.MainEmpleadoActivity"
             android:exported="false" />
 
         <activity
@@ -67,6 +64,15 @@
         <activity
             android:name=".activities.MainAdminActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".activities.admin.JustificacionesAdminActivity"
+            android:parentActivityName=".activities.MainAdminActivity" />
+
+        <activity
+            android:name=".activities.admin.LicenciasAdminActivity"
+            android:parentActivityName=".activities.MainAdminActivity" />
+
 
 
         <!-- FileProvider para compartir archivos -->

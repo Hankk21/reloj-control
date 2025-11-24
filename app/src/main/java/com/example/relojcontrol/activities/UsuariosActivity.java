@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,10 +45,10 @@ public class UsuariosActivity extends AppCompatActivity {
     private TextInputLayout tilBuscar, tilFiltroRol, tilFiltroEstado;
     private TextInputEditText etBuscar;
     private AutoCompleteTextView spinnerRol, spinnerEstado;
-    private MaterialButton btnAñadirUsuario, btnExportar;
+    private MaterialButton btnAnadirUsuario, btnExportar;
     private RecyclerView rvUsuarios;
     private LinearLayout layoutNoUsuarios, layoutPaginacion;
-    private MaterialButton btnPaginaAnterior, btnPaginaSiguiente;
+    private Button btnPaginaAnterior, btnPaginaSiguiente;
     private TextView tvPaginaActual;
 
     // Data
@@ -92,7 +93,7 @@ public class UsuariosActivity extends AppCompatActivity {
         etBuscar = findViewById(R.id.et_buscar);
         spinnerRol = findViewById(R.id.spinner_rol);
         spinnerEstado = findViewById(R.id.spinner_estado);
-        btnAñadirUsuario = findViewById(R.id.btn_añadir_usuario);
+        btnAnadirUsuario = findViewById(R.id.btn_anadir_usuario);
         btnExportar = findViewById(R.id.btn_exportar);
         rvUsuarios = findViewById(R.id.rv_usuarios);
         layoutNoUsuarios = findViewById(R.id.layout_no_usuarios);
@@ -203,7 +204,7 @@ public class UsuariosActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        btnAñadirUsuario.setOnClickListener(v -> {
+        btnAnadirUsuario.setOnClickListener(v -> {
             Intent intent = new Intent(this, AnadirUsuarioActivity.class);
             intent.putExtra("modo_edicion", false);
             startActivity(intent);
@@ -258,7 +259,7 @@ public class UsuariosActivity extends AppCompatActivity {
         for (Usuario usuario : usuariosList) {
             boolean cumpleFiltros = true;
 
-            // Filtro por texto de búsqueda (mantener igual)
+            // Filtro por texto de búsqueda
             if (!textosBusqueda.isEmpty()) {
                 String textoCompleto = (usuario.getNombre() + " " + usuario.getApellido() + " " +
                         usuario.getRut() + " " + usuario.getCorreo()).toLowerCase();

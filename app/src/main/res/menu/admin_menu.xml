@@ -2,22 +2,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Ícono de refresh visible en el Toolbar -->
-    <item
-        android:id="@+id/action_refresh"
-        android:title="Actualizar"
-        android:icon="@drawable/ic_refresh"
-        app:showAsAction="ifRoom" />
-
     <!-- Opciones del menú desplegable (tres puntos) -->
     <item
-        android:id="@+id/action_profile"
-        android:title="Mi Perfil"
-        app:showAsAction="never" />
+        android:id="@+id/menu_usuarios"
+        android:title="Usuarios"
+        android:icon="@drawable/ic_person"
+        app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/action_logout"
+        android:id="@+id/menu_cerrar_sesion"
         android:title="Cerrar Sesión"
+        android:icon="@drawable/ic_logout"
         app:showAsAction="never" />
 
 </menu>

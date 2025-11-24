@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -14,6 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 
+import com.example.relojcontrol.activities.admin.JustificacionesAdminActivity;
+import com.example.relojcontrol.activities.admin.LicenciasAdminActivity;
+import com.example.relojcontrol.models.Asistencia;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
@@ -42,7 +48,7 @@ public class MainAdminActivity extends AppCompatActivity {
     private TextView tvJustificacionesPendientes;
 
     // Cards de navegación
-    private CardView cardUsuarios, cardJustificaciones, cardReportes;
+    private CardView cardUsuarios, cardJustificaciones, cardReportes, cardLicencias;
 
     // Data
     private FirebaseRepository repository;
@@ -87,6 +93,7 @@ public class MainAdminActivity extends AppCompatActivity {
         cardUsuarios = findViewById(R.id.card_usuarios);
         cardJustificaciones = findViewById(R.id.card_justificaciones);
         cardReportes = findViewById(R.id.card_reportes);
+        cardLicencias = findViewById(R.id.card_licencias);
 
         Log.d(TAG, "Views inicializadas");
     }
@@ -96,6 +103,48 @@ public class MainAdminActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Panel de Administración");
         }
+    }
+    //configuracion toolbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.admin_menu, menu);
+        return true;
+    }
+
+    //manejar eventos de menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.menu_usuarios) {
+            //navegar a la pantalla de gestion de usuarios
+            Intent intent = new Intent(this, UsuariosActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.menu_cerrar_sesion) {
+            //cerrar sesion
+            cerrarSesion();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    //metodo para cerrar sesion
+    private void cerrarSesion() {
+        //limpiar los sharedpreferences
+        SharedPreferences preferences = getSharedPreferences("RelojControl", MODE_PRIVATE);
+        preferences.edit().clear().apply();
+
+        FirebaseAuth.getInstance().signOut();
+
+        //navegar al login
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+
+        Toast.makeText(this,"Sesión Cerrada", Toast.LENGTH_SHORT).show();
     }
 
     private void loadUserData() {
@@ -111,12 +160,17 @@ public class MainAdminActivity extends AppCompatActivity {
         });
 
         cardJustificaciones.setOnClickListener(v -> {
-            Intent intent = new Intent(this, JustificadoresActivity.class);
+            Intent intent = new Intent(this, JustificacionesAdminActivity.class);
             startActivity(intent);
         });
 
         cardReportes.setOnClickListener(v -> {
             Intent intent = new Intent(this, ReportesActivity.class);
+            startActivity(intent);
+        });
+
+        cardLicencias.setOnClickListener(v ->{
+            Intent intent = new Intent(this, LicenciasAdminActivity.class);
             startActivity(intent);
         });
 

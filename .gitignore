@@ -13,10 +13,5 @@
 /captures
 .externalNativeBuild
 .cxx
-
-# Específico de Android Studio
-.idea/deploymentTargetSelector.xml
-
-# Archivos generados por el sistema
-Thumbs.db
-Desktop.ini
+local.properties
+app/release/app-release.aab

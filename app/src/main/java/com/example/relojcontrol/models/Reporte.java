@@ -8,7 +8,7 @@ public class Reporte {
 
     public Reporte() {}
 
-    // Getters y Setters (tus originales)
+    // Getters y Setters
     public int getIdReporte() { return idReporte; }
     public void setIdReporte(int idReporte) { this.idReporte = idReporte; }
 
@@ -21,7 +21,7 @@ public class Reporte {
     public int getIdUsuario() { return idUsuario; }
     public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
 
-    // METODO UTILITARIO (NUEVO)
+    // METODO UTILITARIO
     public String getTipoTexto() {
         switch (tipoReporte) {
             case 1: return "Asistencias";

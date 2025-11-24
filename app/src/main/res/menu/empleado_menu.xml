@@ -3,11 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/menu_mi_asistencia"
-        android:title="Mi Asistencia"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/menu_mis_justificaciones"
         android:title="Mis Justificaciones"
         android:icon="@drawable/ic_justifications"

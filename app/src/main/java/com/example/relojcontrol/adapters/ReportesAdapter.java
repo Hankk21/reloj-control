@@ -32,9 +32,9 @@ public class ReportesAdapter extends RecyclerView.Adapter<ReportesAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Reporte reporte = reportesList.get(position);
 
-        holder.tvTipo.setText("Tipo: " + reporte.getTipoTexto());
-        holder.tvFecha.setText("Fecha: " + reporte.getFecha());
-        holder.tvUsuario.setText("Usuario ID: " + reporte.getIdUsuario());
+        holder.tvTitulo.setText(reporte.getTipoReporte());
+        holder.tvDescripcion.setText("Reporte generado por " + reporte.getIdUsuario());
+        holder.tvFecha.setText(reporte.getFecha());
     }
 
     @Override
@@ -49,13 +49,13 @@ public class ReportesAdapter extends RecyclerView.Adapter<ReportesAdapter.ViewHo
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTipo, tvFecha, tvUsuario;
+        TextView tvTitulo, tvFecha, tvDescripcion;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTipo = itemView.findViewById(R.id.tv_tipo);
-            tvFecha = itemView.findViewById(R.id.tv_fecha);
-            tvUsuario = itemView.findViewById(R.id.tv_usuario);
+            tvTitulo = itemView.findViewById(R.id.tv_titulo_reporte);
+            tvDescripcion = itemView.findViewById(R.id.tv_descripcion_reporte);
+            tvFecha = itemView.findViewById(R.id.tv_fecha_generacion);
         }
     }
 }

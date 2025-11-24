@@ -14,8 +14,7 @@
         android:background="@color/primary_color"
         app:title="Reportes de Asistencia"
         app:titleTextColor="@color/white"
-        app:navigationIcon="@drawable/ic_back"
-        app:menu="@menu/reportes_menu" />
+        app:navigationIcon="@drawable/ic_back" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -464,8 +463,8 @@
                         </LinearLayout>
 
                         <!-- Aquí se cargarían los gráficos reales -->
-                        <View
-                            android:id="@+id/chart_container"
+                        <com.github.mikephil.charting.charts.BarChart
+                            android:id="@+id/barChart"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:visibility="gone" />

@@ -9,7 +9,6 @@ import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
-
 public class FirebaseRepository {
     private static final String TAG = "FirebaseRepository";
     private static FirebaseRepository instance;
@@ -56,9 +55,9 @@ public class FirebaseRepository {
     }
 
     public void obtenerUsuarios(DataCallback<List<Usuario>> callback) {
-        Log.d(TAG, "Obteniendo usuarios");
-
-        mDatabase.child("usuarios").addValueEventListener(new ValueEventListener() {
+        Log.d(TAG, "Obteniendo usuarios (Una vez)");
+        // CAMBIO: SingleValueEvent para evitar errores al salir
+        mDatabase.child("usuarios").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 List<Usuario> usuarios = new ArrayList<>();
@@ -81,15 +80,11 @@ public class FirebaseRepository {
 
     public void eliminarUsuario(String firebaseUid, CrudCallback callback) {
         Log.d(TAG, "Eliminando usuario: " + firebaseUid);
-
         mDatabase.child("usuarios").child(firebaseUid).get().addOnSuccessListener(userSnapshot -> {
             Usuario usuario = userSnapshot.getValue(Usuario.class);
             if (usuario != null) {
-                // Eliminar usuario
                 mDatabase.child("usuarios").child(firebaseUid).removeValue();
-                // Eliminar mapping
                 mDatabase.child("userMappings").child(String.valueOf(usuario.getIdUsuario())).removeValue();
-
                 Log.d(TAG, "✓ Usuario eliminado");
                 callback.onSuccess();
             } else {
@@ -101,7 +96,6 @@ public class FirebaseRepository {
     // === ASISTENCIAS ===
     public void registrarAsistencia(String firebaseUid, int tipoAccion, AsistenciaCallback callback) {
         Log.d(TAG, "Registrando asistencia - UID: " + firebaseUid + ", Tipo: " + tipoAccion);
-
         mDatabase.child("usuarios").child(firebaseUid).get().addOnSuccessListener(userSnapshot -> {
             Usuario usuario = userSnapshot.getValue(Usuario.class);
             if (usuario == null) {
@@ -140,21 +134,18 @@ public class FirebaseRepository {
             String fechaHoy = getCurrentDate();
             int userId = usuario.getIdUsuario();
 
-            // Buscar asistencias por usuario y fecha
+            // CAMBIO: SingleValueEvent
             mDatabase.child("asistencias").orderByChild("idUsuario").equalTo(userId)
-                    .addValueEventListener(new ValueEventListener() {
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                             List<Asistencia> asistenciasHoy = new ArrayList<>();
-
                             for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                                 Asistencia asistencia = snapshot.getValue(Asistencia.class);
                                 if (asistencia != null && fechaHoy.equals(asistencia.getFecha())) {
                                     asistenciasHoy.add(asistencia);
                                 }
                             }
-
-                            // Ordenar por hora
                             asistenciasHoy.sort((a, b) -> a.getHora().compareTo(b.getHora()));
                             callback.onSuccess(asistenciasHoy);
                         }
@@ -177,26 +168,23 @@ public class FirebaseRepository {
 
             int userId = usuario.getIdUsuario();
 
+            // CAMBIO: SingleValueEvent
             mDatabase.child("asistencias").orderByChild("idUsuario").equalTo(userId)
-                    .addValueEventListener(new ValueEventListener() {
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                             List<Asistencia> asistencias = new ArrayList<>();
-
                             for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                                 Asistencia asistencia = snapshot.getValue(Asistencia.class);
                                 if (asistencia != null) {
                                     asistencias.add(asistencia);
                                 }
                             }
-
-                            // Ordenar por fecha/hora descendente (más reciente primero)
                             asistencias.sort((a, b) -> {
                                 int fechaCompare = b.getFecha().compareTo(a.getFecha());
                                 if (fechaCompare != 0) return fechaCompare;
                                 return b.getHora().compareTo(a.getHora());
                             });
-
                             callback.onSuccess(asistencias);
                         }
 
@@ -208,11 +196,9 @@ public class FirebaseRepository {
         });
     }
 
-    // === JUSTIFICACIONES (FIRMA CORREGIDA) ===
+    // === JUSTIFICACIONES ===
     public void crearJustificacion(Justificacion justificacion, JustificacionCallback callback) {
         Log.d(TAG, "Creando justificación");
-
-        // Obtener UID del usuario actual autenticado
         String firebaseUid = mAuth.getCurrentUser().getUid();
 
         mDatabase.child("usuarios").child(firebaseUid).get().addOnSuccessListener(userSnapshot -> {
@@ -226,9 +212,8 @@ public class FirebaseRepository {
                 justificacion.setIdJustificacion(nextId);
                 justificacion.setIdUsuario(usuario.getIdUsuario());
                 justificacion.setIdEstado(2); // Pendiente
-
-                // Desnormalizar datos para el adapter
-                justificacion.setNombreUsuario(usuario.getNombreCompleto());
+                // Desnormalización segura
+                justificacion.setNombreUsuario(usuario.getNombre() + " " + usuario.getApellido());
                 justificacion.setRutUsuario(usuario.getRut());
 
                 mDatabase.child("justificaciones").child(String.valueOf(nextId)).setValue(justificacion)
@@ -242,21 +227,20 @@ public class FirebaseRepository {
     }
 
     public void obtenerJustificaciones(DataCallback<List<Justificacion>> callback) {
-        Log.d(TAG, "Obteniendo justificaciones");
-
-        mDatabase.child("justificaciones").addValueEventListener(new ValueEventListener() {
+        Log.d(TAG, "Obteniendo justificaciones (Una vez)");
+        // CAMBIO: SingleValueEvent
+        mDatabase.child("justificaciones").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 List<Justificacion> justificaciones = new ArrayList<>();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Justificacion justificacion = snapshot.getValue(Justificacion.class);
                     if (justificacion != null) {
+                        justificacion.setId(snapshot.getKey()); // Guardar la Key de Firebase
                         justificaciones.add(justificacion);
                     }
                 }
-                // Ordenar por ID descendente (más reciente primero)
                 justificaciones.sort((a, b) -> Integer.compare(b.getIdJustificacion(), a.getIdJustificacion()));
-
                 Log.d(TAG, "✓ Justificaciones obtenidas: " + justificaciones.size());
                 callback.onSuccess(justificaciones);
             }
@@ -271,7 +255,6 @@ public class FirebaseRepository {
     // === LICENCIAS ===
     public void crearLicencia(Licencia licencia, LicenciaCallback callback) {
         String firebaseUid = mAuth.getCurrentUser().getUid();
-
         mDatabase.child("usuarios").child(firebaseUid).get().addOnSuccessListener(userSnapshot -> {
             Usuario usuario = userSnapshot.getValue(Usuario.class);
             if (usuario == null) {
@@ -282,7 +265,7 @@ public class FirebaseRepository {
             getNextId("licencias", nextId -> {
                 licencia.setIdLicencia(nextId);
                 licencia.setIdUsuario(usuario.getIdUsuario());
-                licencia.setIdEstado(2); // Pendiente
+                licencia.setIdEstado(2);
 
                 mDatabase.child("licencias").child(String.valueOf(nextId)).setValue(licencia)
                         .addOnSuccessListener(aVoid -> {
@@ -295,13 +278,15 @@ public class FirebaseRepository {
     }
 
     public void obtenerLicencias(DataCallback<List<Licencia>> callback) {
-        mDatabase.child("licencias").addValueEventListener(new ValueEventListener() {
+        // CAMBIO: SingleValueEvent
+        mDatabase.child("licencias").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 List<Licencia> licencias = new ArrayList<>();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Licencia licencia = snapshot.getValue(Licencia.class);
                     if (licencia != null) {
+                        licencia.setId(snapshot.getKey());
                         licencias.add(licencia);
                     }
                 }
@@ -342,13 +327,10 @@ public class FirebaseRepository {
         });
     }
 
-
     private void crearIndicesAsistencia(Asistencia asistencia) {
         int userId = asistencia.getIdUsuario();
         int asistenciaId = asistencia.getIdAsistencia();
         String fecha = asistencia.getFecha();
-
-        // CONVERSIÓN CORREGIDA: int → String para Firebase keys
         mDatabase.child("indices").child("asistenciasPorUsuarioFecha")
                 .child(userId + "_" + fecha).child(String.valueOf(asistenciaId)).setValue(true);
     }
@@ -367,7 +349,7 @@ public class FirebaseRepository {
         return sdf.format(new Date());
     }
 
-    // === INTERFACES ===
+    // Interfaces
     public interface CrudCallback {
         void onSuccess();
         void onError(Exception error);

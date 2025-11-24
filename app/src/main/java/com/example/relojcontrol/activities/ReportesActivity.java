@@ -1,12 +1,24 @@
 package com.example.relojcontrol.activities;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.os.Environment;
+import android.provider.MediaStore;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -16,26 +28,33 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 
+import com.example.relojcontrol.R;
+import com.example.relojcontrol.models.Asistencia;
+import com.example.relojcontrol.models.Usuario;
+import com.example.relojcontrol.network.FirebaseRepository;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import com.example.relojcontrol.R;
-import com.example.relojcontrol.models.Usuario;
-import com.example.relojcontrol.models.Asistencia;
-import com.example.relojcontrol.network.FirebaseRepository;
-
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ReportesActivity extends AppCompatActivity {
 
     private static final String TAG = "ReportesActivity";
-
-    // Views - IDs exactos de tu XML
     private Toolbar toolbar;
 
     // Filtros
@@ -54,7 +73,9 @@ public class ReportesActivity extends AppCompatActivity {
     private TextView tvTituloVistaPrevia;
     private ImageView ivRefreshPreview;
     private LinearLayout layoutChartPlaceholder, layoutResumenDatos;
-    private View chartContainer;
+
+    // GRÁFICO REAL
+    private BarChart barChart;
 
     // Stats
     private TextView tvStat1Value, tvStat1Label;
@@ -72,16 +93,19 @@ public class ReportesActivity extends AppCompatActivity {
     // Data
     private FirebaseRepository repository;
     private List<Usuario> usuariosList;
+
+    // Mappings para saber qué usuario seleccionó el admin
+    private Map<String, String> nombreToUidMap;
+
     private String tipoReporteSeleccionado = "";
     private String fechaDesde = "";
     private String fechaHasta = "";
-    private String usuarioSeleccionado = "Todos los usuarios";
+    private String uidUsuarioSeleccionado = null; // Null = Todos
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reportes);
-
         Log.d(TAG, "=== ReportesActivity iniciada ===");
 
         initFirebase();
@@ -97,14 +121,11 @@ public class ReportesActivity extends AppCompatActivity {
     private void initFirebase() {
         repository = FirebaseRepository.getInstance();
         usuariosList = new ArrayList<>();
-        Log.d(TAG, "Firebase repository inicializado");
+        nombreToUidMap = new HashMap<>();
     }
 
     private void initViews() {
-        // IDs exactos de tu XML
         toolbar = findViewById(R.id.toolbar);
-
-        // Filtros
         tilRangoFechas = findViewById(R.id.til_rango_fechas);
         tilUsuario = findViewById(R.id.til_usuario);
         spinnerRangoFechas = findViewById(R.id.spinner_rango_fechas);
@@ -116,20 +137,19 @@ public class ReportesActivity extends AppCompatActivity {
         etFechaHasta = findViewById(R.id.et_fecha_hasta);
         btnAplicarFiltros = findViewById(R.id.btn_aplicar_filtros);
 
-        // Tipos de reportes
         cardReporteAsistencia = findViewById(R.id.card_reporte_asistencia);
         cardReporteAtrasos = findViewById(R.id.card_reporte_atrasos);
         cardReporteAusencias = findViewById(R.id.card_reporte_ausencias);
 
-        // Vista previa
         cardVistaPrevia = findViewById(R.id.card_vista_previa);
         tvTituloVistaPrevia = findViewById(R.id.tv_titulo_vista_previa);
         ivRefreshPreview = findViewById(R.id.iv_refresh_preview);
         layoutChartPlaceholder = findViewById(R.id.layout_chart_placeholder);
         layoutResumenDatos = findViewById(R.id.layout_resumen_datos);
-        chartContainer = findViewById(R.id.chart_container);
 
-        // Stats
+        // AQUI CAMBIAMOS EL VIEW GENÉRICO POR EL BARCHART
+        barChart = findViewById(R.id.barChart);
+
         tvStat1Value = findViewById(R.id.tv_stat1_value);
         tvStat1Label = findViewById(R.id.tv_stat1_label);
         tvStat2Value = findViewById(R.id.tv_stat2_value);
@@ -137,16 +157,12 @@ public class ReportesActivity extends AppCompatActivity {
         tvStat3Value = findViewById(R.id.tv_stat3_value);
         tvStat3Label = findViewById(R.id.tv_stat3_label);
 
-        // Exportación
         layoutBotonesExportacion = findViewById(R.id.layout_botones_exportacion);
         btnGenerarPdf = findViewById(R.id.btn_generar_pdf);
         btnExportarExcel = findViewById(R.id.btn_exportar_excel);
 
-        // Loading
         layoutLoadingReporte = findViewById(R.id.layout_loading_reporte);
         tvLoadingMessage = findViewById(R.id.tv_loading_message);
-
-        Log.d(TAG, "Views inicializadas");
     }
 
     private void setupToolbar() {
@@ -155,103 +171,88 @@ public class ReportesActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Reportes de Asistencia");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
     private void setupSpinners() {
-        // Configurar spinner de rango de fechas
         String[] rangosFechas = {"Esta semana", "Este mes", "Últimos 30 días", "Personalizado"};
-        ArrayAdapter<String> adapterRangos = new ArrayAdapter<>(this,
-                android.R.layout.simple_dropdown_item_1line, rangosFechas);
+        ArrayAdapter<String> adapterRangos = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, rangosFechas);
         spinnerRangoFechas.setAdapter(adapterRangos);
         spinnerRangoFechas.setText("Esta semana", false);
 
         spinnerRangoFechas.setOnItemClickListener((parent, view, position, id) -> {
-            String rangoSeleccionado = (String) parent.getItemAtPosition(position);
-            manejarSeleccionRango(rangoSeleccionado);
+            String rango = (String) parent.getItemAtPosition(position);
+            manejarSeleccionRango(rango);
         });
 
-        Log.d(TAG, "Spinners configurados");
+        // Listener para usuario seleccionado
+        spinnerUsuario.setOnItemClickListener((parent, view, position, id) -> {
+            String seleccion = (String) parent.getItemAtPosition(position);
+            if (seleccion.equals("Todos los usuarios")) {
+                uidUsuarioSeleccionado = null;
+            } else {
+                // Buscamos el UID usando el mapa que llenaremos al cargar usuarios
+                uidUsuarioSeleccionado = nombreToUidMap.get(seleccion);
+            }
+        });
     }
 
     private void setupDatePickers() {
-        etFechaDesde.setOnClickListener(v -> mostrarDatePicker(etFechaDesde, "Seleccionar fecha desde"));
-        etFechaHasta.setOnClickListener(v -> mostrarDatePicker(etFechaHasta, "Seleccionar fecha hasta"));
-
-        Log.d(TAG, "Date pickers configurados");
+        etFechaDesde.setOnClickListener(v -> mostrarDatePicker(etFechaDesde));
+        etFechaHasta.setOnClickListener(v -> mostrarDatePicker(etFechaHasta));
     }
 
     private void setupClickListeners() {
         btnAplicarFiltros.setOnClickListener(v -> aplicarFiltros());
 
-        // Tipos de reportes
         cardReporteAsistencia.setOnClickListener(v -> seleccionarTipoReporte("asistencia"));
         cardReporteAtrasos.setOnClickListener(v -> seleccionarTipoReporte("atrasos"));
         cardReporteAusencias.setOnClickListener(v -> seleccionarTipoReporte("ausencias"));
 
-        // Vista previa
         ivRefreshPreview.setOnClickListener(v -> actualizarVistaPrevia());
 
-        // Exportación
-        btnGenerarPdf.setOnClickListener(v -> generarPDF());
-        btnExportarExcel.setOnClickListener(v -> exportarExcel());
-
-        Log.d(TAG, "Click listeners configurados");
+        btnGenerarPdf.setOnClickListener(v -> Toast.makeText(this, "Próximamente en v2.0", Toast.LENGTH_SHORT).show());
+        btnExportarExcel.setOnClickListener(v -> exportarDatosACSV());
     }
 
     private void loadUsuarios() {
-        Log.d(TAG, "Cargando usuarios para filtro");
-
         repository.obtenerUsuarios(new FirebaseRepository.DataCallback<List<Usuario>>() {
             @Override
             public void onSuccess(List<Usuario> usuarios) {
                 usuariosList.clear();
                 usuariosList.addAll(usuarios);
+                nombreToUidMap.clear();
 
-                // Configurar spinner de usuarios
-                List<String> nombresUsuarios = new ArrayList<>();
-                nombresUsuarios.add("Todos los usuarios");
+                List<String> nombres = new ArrayList<>();
+                nombres.add("Todos los usuarios");
 
-                for (Usuario usuario : usuarios) {
-                    String nombreCompleto = usuario.getNombre() + " " + usuario.getApellido();
-                    nombresUsuarios.add(nombreCompleto);
+                for (Usuario u : usuarios) {
+                    String nombre = u.getNombre() + " " + u.getApellido();
+                    nombres.add(nombre);
+                    // Guardamos mapeo Nombre -> ID numérico (String)
+                    nombreToUidMap.put(nombre, String.valueOf(u.getIdUsuario()));
                 }
 
-                ArrayAdapter<String> adapterUsuarios = new ArrayAdapter<>(ReportesActivity.this,
-                        android.R.layout.simple_dropdown_item_1line, nombresUsuarios);
-                spinnerUsuario.setAdapter(adapterUsuarios);
-                spinnerUsuario.setText("Todos los usuarios", false);
-
-                Log.d(TAG, "✓ Usuarios cargados para filtro: " + usuarios.size());
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(ReportesActivity.this, android.R.layout.simple_dropdown_item_1line, nombres);
+                spinnerUsuario.setAdapter(adapter);
             }
-
             @Override
             public void onError(Exception error) {
-                Log.e(TAG, "✗ Error cargando usuarios", error);
-                Toast.makeText(ReportesActivity.this,
-                        "Error cargando usuarios", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Error loading users", error);
             }
         });
     }
 
     private void configurarFechasIniciales() {
-        // Configurar fechas para "Esta semana" por defecto
         Calendar calendar = Calendar.getInstance();
-
-        // Fecha hasta = hoy
         fechaHasta = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.getTime());
-
-        // Fecha desde = hace 7 días
         calendar.add(Calendar.DAY_OF_YEAR, -7);
         fechaDesde = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.getTime());
-
-        Log.d(TAG, "Fechas configuradas - Desde: " + fechaDesde + ", Hasta: " + fechaHasta);
     }
 
     private void manejarSeleccionRango(String rango) {
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
         if ("Personalizado".equals(rango)) {
             layoutFechasPersonalizadas.setVisibility(View.VISIBLE);
@@ -260,201 +261,295 @@ public class ReportesActivity extends AppCompatActivity {
             layoutFechasPersonalizadas.setVisibility(View.GONE);
         }
 
-        // Fecha hasta = hoy
-        fechaHasta = dateFormat.format(calendar.getTime());
-
+        fechaHasta = sdf.format(calendar.getTime());
         switch (rango) {
-            case "Esta semana":
-                calendar.add(Calendar.DAY_OF_YEAR, -7);
-                break;
-            case "Este mes":
-                calendar.add(Calendar.MONTH, -1);
-                break;
-            case "Últimos 30 días":
-                calendar.add(Calendar.DAY_OF_YEAR, -30);
-                break;
+            case "Esta semana": calendar.add(Calendar.DAY_OF_YEAR, -7); break;
+            case "Este mes": calendar.add(Calendar.MONTH, -1); break;
+            case "Últimos 30 días": calendar.add(Calendar.DAY_OF_YEAR, -30); break;
         }
-
-        fechaDesde = dateFormat.format(calendar.getTime());
-        Log.d(TAG, "Rango actualizado - " + rango + ": " + fechaDesde + " a " + fechaHasta);
+        fechaDesde = sdf.format(calendar.getTime());
     }
 
-    private void mostrarDatePicker(TextInputEditText editText, String titulo) {
-        Calendar calendar = Calendar.getInstance();
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                this,
-                (view, year, month, dayOfMonth) -> {
-                    Calendar selectedDate = Calendar.getInstance();
-                    selectedDate.set(year, month, dayOfMonth);
-
-                    String dateString = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                            .format(selectedDate.getTime());
-                    editText.setText(dateString);
-
-                    // Actualizar variables según el campo
-                    if (editText == etFechaDesde) {
-                        fechaDesde = dateString;
-                    } else if (editText == etFechaHasta) {
-                        fechaHasta = dateString;
-                    }
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        datePickerDialog.setTitle(titulo);
-        datePickerDialog.show();
+    private void mostrarDatePicker(TextInputEditText editText) {
+        Calendar cal = Calendar.getInstance();
+        new DatePickerDialog(this, (view, year, month, day) -> {
+            String date = String.format(Locale.getDefault(), "%d-%02d-%02d", year, month + 1, day);
+            editText.setText(date);
+            if (editText == etFechaDesde) fechaDesde = date;
+            else fechaHasta = date;
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void aplicarFiltros() {
-        Log.d(TAG, "Aplicando filtros de reporte");
-
-        // Si es rango personalizado, usar las fechas de los campos
         if ("Personalizado".equals(spinnerRangoFechas.getText().toString())) {
-            fechaDesde = etFechaDesde.getText().toString().trim();
-            fechaHasta = etFechaHasta.getText().toString().trim();
-
+            fechaDesde = etFechaDesde.getText().toString();
+            fechaHasta = etFechaHasta.getText().toString();
             if (fechaDesde.isEmpty() || fechaHasta.isEmpty()) {
-                Toast.makeText(this, "Seleccione ambas fechas", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Seleccione fechas", Toast.LENGTH_SHORT).show();
                 return;
             }
         }
 
-        usuarioSeleccionado = spinnerUsuario.getText().toString();
-
-        Toast.makeText(this, "Filtros aplicados correctamente", Toast.LENGTH_SHORT).show();
-
-        // Si hay un tipo de reporte seleccionado, actualizar la vista previa
-        if (!tipoReporteSeleccionado.isEmpty()) {
-            actualizarVistaPrevia();
-        }
-
-        Log.d(TAG, "Filtros aplicados - Período: " + fechaDesde + " a " + fechaHasta +
-                ", Usuario: " + usuarioSeleccionado);
+        Toast.makeText(this, "Filtros aplicados", Toast.LENGTH_SHORT).show();
+        if (!tipoReporteSeleccionado.isEmpty()) actualizarVistaPrevia();
     }
 
     private void seleccionarTipoReporte(String tipo) {
-        Log.d(TAG, "Tipo de reporte seleccionado: " + tipo);
-
         tipoReporteSeleccionado = tipo;
-
-        // Mostrar vista previa
         cardVistaPrevia.setVisibility(View.VISIBLE);
         layoutBotonesExportacion.setVisibility(View.VISIBLE);
 
-        // Actualizar título según el tipo
         switch (tipo) {
-            case "asistencia":
-                tvTituloVistaPrevia.setText("Reporte de Asistencia");
-                break;
-            case "atrasos":
-                tvTituloVistaPrevia.setText("Reporte de Atrasos");
-                break;
-            case "ausencias":
-                tvTituloVistaPrevia.setText("Reporte de Ausencias");
-                break;
+            case "asistencia": tvTituloVistaPrevia.setText("Reporte de Asistencia"); break;
+            case "atrasos": tvTituloVistaPrevia.setText("Reporte de Atrasos"); break;
+            case "ausencias": tvTituloVistaPrevia.setText("Reporte de Ausencias"); break;
         }
-
-        // Generar vista previa
         actualizarVistaPrevia();
     }
 
+    // === EL CORAZÓN DE LOS REPORTES: LÓGICA REAL ===
     private void actualizarVistaPrevia() {
-        Log.d(TAG, "Actualizando vista previa del reporte: " + tipoReporteSeleccionado);
-
         showLoading(true);
 
-        // Simular carga de datos
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000); // Simular procesamiento
+        repository.obtenerUsuarios(new FirebaseRepository.DataCallback<List<Usuario>>() {
+            @Override
+            public void onSuccess(List<Usuario> usuarios) {
+                // Variables para controlar el progreso de carga asíncrona
+                List<Asistencia> todasLasAsistencias = new ArrayList<>();
 
-                runOnUiThread(() -> {
-                    generarDatosMockup();
-                    showLoading(false);
-                    mostrarVistaPrevia();
-                });
+                // Usamos array final para poder accederlo desde dentro del loop
+                final int[] contadores = {0, usuarios.size()};
 
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Error en simulación", e);
+                if (contadores[1] == 0) {
+                    procesarDatosYMostrar(new ArrayList<>());
+                    return;
+                }
+
+                for (Usuario u : usuarios) {
+                    // Filtro de usuario único: si no es el seleccionado, lo contamos como "listo" y saltamos
+                    if (uidUsuarioSeleccionado != null && !String.valueOf(u.getIdUsuario()).equals(uidUsuarioSeleccionado)) {
+                        checkFinProceso(contadores, todasLasAsistencias);
+                        continue;
+                    }
+
+                    // Buscar mapping y luego historial
+                    repository.mDatabase.child("userMappings").child(String.valueOf(u.getIdUsuario()))
+                            .get().addOnSuccessListener(snapshot -> {
+                                String firebaseUid = snapshot.getValue(String.class);
+                                if (firebaseUid != null) {
+                                    repository.obtenerHistorialAsistencia(firebaseUid, new FirebaseRepository.DataCallback<List<Asistencia>>() {
+                                        @Override
+                                        public void onSuccess(List<Asistencia> asistencias) {
+                                            todasLasAsistencias.addAll(asistencias);
+                                            checkFinProceso(contadores, todasLasAsistencias);
+                                        }
+                                        @Override
+                                        public void onError(Exception e) {
+                                            checkFinProceso(contadores, todasLasAsistencias);
+                                        }
+                                    });
+                                } else {
+                                    checkFinProceso(contadores, todasLasAsistencias);
+                                }
+                            }).addOnFailureListener(e -> checkFinProceso(contadores, todasLasAsistencias));
+                }
             }
-        }).start();
+
+            @Override
+            public void onError(Exception error) {
+                showLoading(false);
+                Toast.makeText(ReportesActivity.this, "Error cargando usuarios", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private void generarDatosMockup() {
-        // Generar datos de ejemplo según el tipo de reporte
-        switch (tipoReporteSeleccionado) {
-            case "asistencia":
-                tvStat1Value.setText("87%");
-                tvStat1Label.setText("Asistencia");
-                tvStat2Value.setText("24");
-                tvStat2Label.setText("Días trabajados");
-                tvStat3Value.setText("3");
-                tvStat3Label.setText("Días faltantes");
-                break;
+    //Metodo auxiliar para contar el progreso
+    private synchronized void checkFinProceso(int[] contadores, List<Asistencia> todasLasAsistencias) {
+        contadores[0]++; // Incrementamos usuarios procesados
 
-            case "atrasos":
-                tvStat1Value.setText("12");
-                tvStat1Label.setText("Total atrasos");
-                tvStat2Value.setText("8 min");
-                tvStat2Label.setText("Promedio");
-                tvStat3Value.setText("35 min");
-                tvStat3Label.setText("Mayor atraso");
-                break;
+        // Si procesados == total, terminamos
+        if (contadores[0] >= contadores[1]) {
+            procesarDatosYMostrar(todasLasAsistencias);
+        }
+    }
 
-            case "ausencias":
-                tvStat1Value.setText("5");
-                tvStat1Label.setText("Ausencias");
-                tvStat2Value.setText("3");
-                tvStat2Label.setText("Justificadas");
-                tvStat3Value.setText("2");
-                tvStat3Label.setText("Sin justificar");
-                break;
+    //Metodo para filtrar, calcular y mostrar
+    private void procesarDatosYMostrar(List<Asistencia> datosBrutos) {
+        // Este proceso debe correr en el hilo principal porque toca la UI
+        runOnUiThread(() -> {
+            try {
+                List<Asistencia> filtradas = filtrarPorFecha(datosBrutos, fechaDesde, fechaHasta);
+                calcularEstadisticasYGraficar(filtradas);
+                showLoading(false);
+                mostrarVistaPreviaUI();
+            } catch (Exception e) {
+                Log.e(TAG, "Error procesando datos", e);
+                showLoading(false);
+            }
+        });
+    }
+
+    private List<Asistencia> filtrarPorFecha(List<Asistencia> input, String desde, String hasta) {
+        List<Asistencia> output = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        try {
+            Date dDesde = sdf.parse(desde);
+            Date dHasta = sdf.parse(hasta);
+
+            for (Asistencia a : input) {
+                Date dAsistencia = sdf.parse(a.getFecha());
+                if (dAsistencia != null && !dAsistencia.before(dDesde) && !dAsistencia.after(dHasta)) {
+                    output.add(a);
+                }
+            }
+        } catch (ParseException e) { e.printStackTrace(); }
+        return output;
+    }
+
+    private void exportarDatosACSV() {
+        if (barChart.getData() == null || barChart.getData().getEntryCount() == 0) {
+            Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        Log.d(TAG, "Datos mockup generados para: " + tipoReporteSeleccionado);
+        StringBuilder csvData = new StringBuilder();
+        csvData.append("Reporte de Asistencia\n");
+        csvData.append("Fecha,Cantidad\n");
+
+        // (Aquí va tu lógica para llenar el StringBuilder con tus datos reales)
+        csvData.append("Asistencia,").append(tvStat1Value.getText()).append("\n");
+        csvData.append("Atrasos,").append(tvStat2Value.getText()).append("\n");
+        csvData.append("Ausencias,").append(tvStat3Value.getText()).append("\n");
+
+        String nombreArchivo = "Reporte_" + System.currentTimeMillis() + ".csv";
+
+        try {
+            // VERIFICA LA VERSIÓN DE ANDROID
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, nombreArchivo);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RelojControl");
+
+                ContentResolver resolver = getContentResolver();
+                Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+                if (uri != null) {
+                    OutputStream outputStream = resolver.openOutputStream(uri);
+                    if (outputStream != null) {
+                        outputStream.write(csvData.toString().getBytes());
+                        outputStream.close();
+                        Toast.makeText(this, "Guardado en Descargas/RelojControl", Toast.LENGTH_LONG).show();
+                    }
+                }
+
+            } else {
+
+                File directorio = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File file = new File(directorio, nombreArchivo);
+
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(csvData.toString().getBytes());
+                fos.close();
+
+                Toast.makeText(this, "Guardado en: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error exportando archivo", e);
+            Toast.makeText(this, "Error al exportar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void mostrarVistaPrevia() {
-        // Ocultar placeholder y mostrar contenido
-        layoutChartPlaceholder.setVisibility(View.GONE);
-        layoutResumenDatos.setVisibility(View.VISIBLE);
-        chartContainer.setVisibility(View.VISIBLE);
+    private void calcularEstadisticasYGraficar(List<Asistencia> datos) {
+        int totalAsistencias = 0;
+        int totalAtrasos = 0;
+        // Map para agrupar por fecha
+        Map<String, Integer> conteoPorFecha = new HashMap<>();
 
-        // Aquí se implementaría la lógica real para generar gráficos
-        // Por ejemplo, usando una librería como MPAndroidChart
+        for (Asistencia a : datos) {
+            if (a.getIdTipoAccion() == 1) { // Solo entradas cuentan como asistencia
+                totalAsistencias++;
 
-        Log.d(TAG, "Vista previa mostrada");
+                // Lógica de Atraso: Si hora > 09:00:00
+                if (a.getHora().compareTo("09:00:00") > 0) {
+                    totalAtrasos++;
+                }
+
+                // Agrupar para gráfico
+                String fecha = a.getFecha();
+                conteoPorFecha.put(fecha, conteoPorFecha.getOrDefault(fecha, 0) + 1);
+            }
+        }
+
+        // Actualizar Textos de Estadísticas
+        tvStat1Label.setText("Total Asistencias");
+        tvStat1Value.setText(String.valueOf(totalAsistencias));
+
+        tvStat2Label.setText("Atrasos");
+        tvStat2Value.setText(String.valueOf(totalAtrasos));
+
+        tvStat3Label.setText("Puntualidad");
+        int porcentaje = totalAsistencias > 0 ? ((totalAsistencias - totalAtrasos) * 100 / totalAsistencias) : 0;
+        tvStat3Value.setText(porcentaje + "%");
+
+        // Configurar Gráfico
+        configurarGrafico(conteoPorFecha);
+    }
+
+    private void configurarGrafico(Map<String, Integer> datosMapa) {
+        ArrayList<BarEntry> entries = new ArrayList<>();
+        ArrayList<String> labels = new ArrayList<>();
+
+        int i = 0;
+        // Ordenar fechas
+        Map<String, Integer> sortedMap = new java.util.TreeMap<>(datosMapa);
+
+        for (Map.Entry<String, Integer> entry : sortedMap.entrySet()) {
+            entries.add(new BarEntry(i, entry.getValue()));
+            labels.add(entry.getKey().substring(5)); // Mostrar solo MM-dd
+            i++;
+        }
+
+        if (entries.isEmpty()) {
+            barChart.clear();
+            return;
+        }
+
+        BarDataSet dataSet = new BarDataSet(entries, "Asistencias por Día");
+        dataSet.setColor(getColor(R.color.primary_color));
+        dataSet.setValueTextSize(12f);
+
+        BarData data = new BarData(dataSet);
+        data.setBarWidth(0.9f);
+
+        barChart.setData(data);
+        barChart.setFitBars(true);
+        barChart.getDescription().setEnabled(false);
+
+        // Configurar Eje X
+        XAxis xAxis = barChart.getXAxis();
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setGranularity(1f);
+
+        barChart.animateY(1000);
+        barChart.invalidate(); // Refrescar
     }
 
     private void showLoading(boolean show) {
-        tvLoadingMessage.setText("Generando reporte de " + tipoReporteSeleccionado + "...");
         layoutLoadingReporte.setVisibility(show ? View.VISIBLE : View.GONE);
-
         if (show) {
-            layoutChartPlaceholder.setVisibility(View.VISIBLE);
+            layoutChartPlaceholder.setVisibility(View.GONE);
             layoutResumenDatos.setVisibility(View.GONE);
-            chartContainer.setVisibility(View.GONE);
+            barChart.setVisibility(View.GONE);
         }
     }
 
-    private void generarPDF() {
-        Log.d(TAG, "Generando PDF del reporte: " + tipoReporteSeleccionado);
-
-        Toast.makeText(this, "Generando PDF... (Funcionalidad en desarrollo)", Toast.LENGTH_LONG).show();
-
-        // Implementar generación de PDF
-        // Usar librerías como iText o PDFDocument
-    }
-
-    private void exportarExcel() {
-        Log.d(TAG, "Exportando a Excel el reporte: " + tipoReporteSeleccionado);
-
-        Toast.makeText(this, "Exportando a Excel... (Funcionalidad en desarrollo)", Toast.LENGTH_LONG).show();
-
-        // Implementar exportación a Excel
-        // Usar librerías como Apache POI
+    private void mostrarVistaPreviaUI() {
+        layoutChartPlaceholder.setVisibility(View.GONE);
+        layoutResumenDatos.setVisibility(View.VISIBLE);
+        barChart.setVisibility(View.VISIBLE);
     }
 }
